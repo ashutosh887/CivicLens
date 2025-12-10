@@ -1,4 +1,4 @@
 export default {
     appName: "CivicLens",
-    appDescription: "Making public services understandable for everyone",
+    appDescription: "Bringing clarity to public services for everyone 🔎",
 }
