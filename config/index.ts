@@ -1,7 +1,7 @@
 const config = {
   appName: "CivicLens",
   appDescription: "Bringing clarity to public services for everyone.",
-  appUrl: "https://civiclens.org", // Update with your actual domain
+  appUrl: "http://tryciviclens.vercel.app",
   founder: {
     name: "Ashutosh",
     social: {

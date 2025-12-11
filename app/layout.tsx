@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 import { Poppins } from "next/font/google";
 import config from "@/config";
+import { ClarityProvider } from "@/components/Clarity";
 
 const poppins = Poppins({
   subsets: ["latin"],
@@ -58,12 +59,14 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const clarityProjectId = process.env.NEXT_PUBLIC_CLARITY_PROJECT_ID ?? "";
+
   return (
     <html lang="en">
-      <body
-        className={`${poppins.className} antialiased`}
-      >
-        {children}
+      <body className={`${poppins.className} antialiased`}>
+        <ClarityProvider projectId={clarityProjectId}>
+          {children}
+        </ClarityProvider>
       </body>
     </html>
   );
