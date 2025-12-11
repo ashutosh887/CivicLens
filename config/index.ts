@@ -14,7 +14,6 @@ const config = {
   landing: {
     hero: {
       title: "CivicLens",
-      tagline: "Bringing clarity to public services for everyone.",
       subheading:
         "Ask natural questions about public schemes, rights, or benefits and get clear, actionable answers in plain language.",
       searchPlaceholder: "Ask about any public service…",
@@ -44,7 +43,6 @@ const config = {
       subtitle: "Important information about the use of CivicLens",
       description: "Legal disclaimer and terms of use for CivicLens",
       content: {
-        main: "CivicLens does not provide legal advice. For binding interpretations, consult official authorities or legal professionals.",
         sections: [
           {
             title: "General Information",
@@ -88,7 +86,6 @@ const config = {
     },
     about: {
       title: "About Us",
-      subtitle: "Bringing clarity to public services for everyone.",
       description: "Learn more about CivicLens and our mission",
       content: {
         sections: [
@@ -123,6 +120,6 @@ const config = {
     }
   }
 };
-  
-  export default config;
+
+export default config;
   

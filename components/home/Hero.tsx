@@ -2,11 +2,11 @@ import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
+import config from "@/config";
 
 interface HeroProps {
   hero: {
     title: string;
-    tagline: string;
     subheading: string;
     searchPlaceholder: string;
     primaryCta: string;
@@ -40,7 +40,7 @@ export function Hero({ hero }: HeroProps) {
 
             <div className="inline-flex items-center gap-1.5 sm:gap-2 rounded-full border border-border px-2.5 sm:px-3 py-1 sm:py-1.5 text-[10px] sm:text-[11px] text-muted-foreground bg-muted/50">
               <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-primary shrink-0" />
-              <span className="text-center">{hero.tagline}</span>
+              <span className="text-center">{config.appDescription}</span>
             </div>
 
             <p className="mx-auto max-w-xl text-xs sm:text-sm md:text-base text-muted-foreground leading-relaxed px-2 sm:px-0">

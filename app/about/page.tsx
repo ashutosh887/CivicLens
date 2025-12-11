@@ -14,7 +14,7 @@ export default function AboutPage() {
   return (
     <PageLayout>
       <div className="w-full space-y-6">
-        <PageHeader title={page.title} subtitle={page.subtitle} showLogo={true} />
+        <PageHeader title={page.title} subtitle={config.appDescription} showLogo={true} />
 
         <div className="min-h-[280px] space-y-4 rounded-xl border border-border bg-background p-4 sm:p-6 shadow-sm">
           <div className="space-y-3">

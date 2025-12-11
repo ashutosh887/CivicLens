@@ -18,7 +18,7 @@ export default function DisclaimerPage() {
 
         <div className="min-h-[280px] space-y-4 rounded-xl border border-border bg-background p-4 sm:p-6 shadow-sm">
           <p className="text-xs sm:text-sm leading-relaxed text-muted-foreground text-center">
-            {page.content.main}
+            {config.landing.footer.disclaimer}
           </p>
 
           <div className="space-y-3">
