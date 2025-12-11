@@ -1,6 +1,16 @@
 const config = {
   appName: "CivicLens",
   appDescription: "Bringing clarity to public services for everyone.",
+  appUrl: "https://civiclens.org", // Update with your actual domain
+  founder: {
+    name: "Ashutosh",
+    social: {
+      linkedin: "https://linkedin.com/in/ashutosh887",
+      twitter: "https://twitter.com/ashutosh887_",
+      github: "https://github.com/ashutosh887",
+      website: "https://ashutosh887.in"
+    }
+  },
   landing: {
     hero: {
       title: "CivicLens",
@@ -21,11 +31,95 @@ const config = {
       links: [
         { label: "Disclaimer", href: "/disclaimer" },
         { label: "Privacy", href: "/privacy" },
-        { label: "About", href: "/about" },
+        { label: "About Us", href: "/about" },
         { label: "Contact", href: "/contact" }
       ],
       disclaimer:
         "CivicLens does not provide legal advice. For binding interpretations, consult official authorities or legal professionals."
+    }
+  },
+  pages: {
+    disclaimer: {
+      title: "Disclaimer",
+      subtitle: "Important information about the use of CivicLens",
+      description: "Legal disclaimer and terms of use for CivicLens",
+      content: {
+        main: "CivicLens does not provide legal advice. For binding interpretations, consult official authorities or legal professionals.",
+        sections: [
+          {
+            title: "General Information",
+            text: "CivicLens provides general information about public services. Information is for guidance only and not legal or professional advice."
+          },
+          {
+            title: "Accuracy",
+            text: "We strive for accuracy but cannot guarantee completeness. Verify critical information with official sources."
+          },
+          {
+            title: "No Liability",
+            text: "CivicLens is not liable for decisions made based on our information. Users must verify details independently."
+          }
+        ]
+      }
+    },
+    privacy: {
+      title: "Privacy Policy",
+      subtitle: "How we collect, use, and protect your information",
+      description: "Privacy policy and data protection information for CivicLens",
+      content: {
+        sections: [
+          {
+            title: "Information We Collect",
+            text: "We collect queries, feedback, and technical data (IP, browser) for analytics and service improvement."
+          },
+          {
+            title: "How We Use It",
+            text: "Information is used to provide and improve services. We don't sell your data to third parties."
+          },
+          {
+            title: "Data Security",
+            text: "We implement security measures to protect your information. No internet transmission is 100% secure."
+          },
+          {
+            title: "Your Rights",
+            text: "You can access, update, or delete your information. Contact us to exercise these rights."
+          }
+        ]
+      }
+    },
+    about: {
+      title: "About Us",
+      subtitle: "Bringing clarity to public services for everyone.",
+      description: "Learn more about CivicLens and our mission",
+      content: {
+        sections: [
+          {
+            title: "Our Mission",
+            text: "Making public services accessible and understandable. Government information should be clear and easy to find."
+          },
+          {
+            title: "What We Do",
+            text: "Ask questions about public services and get clear answers. We help navigate eligibility, documents, and appeals."
+          },
+          {
+            title: "Our Approach",
+            text: "We use technology to simplify complex government documentation into plain language answers."
+          },
+          {
+            title: "Transparency",
+            text: "We're transparent about limitations. CivicLens provides guidance, not official consultations or legal advice."
+          }
+        ]
+      }
+    },
+    contact: {
+      title: "Contact Us",
+      subtitle: "Have questions or feedback? Reach out to us on social media or visit our website.",
+      description: "Get in touch with the CivicLens team. Reach out to us on LinkedIn, Twitter, GitHub, or visit our website.",
+      content: {
+        heading: "Connect with the Founder",
+        descriptionTemplate: "Feel free to reach out to {founderName} on any of these platforms:",
+        responseTime: "We typically respond within 1-2 business days."
+      }
     }
   }
 };
