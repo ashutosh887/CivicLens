@@ -1,3 +1,4 @@
+import Image from "next/image";
 import config from "@/config";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,11 +14,13 @@ export default function Home() {
         <section className="h-screen md:h-auto md:flex-[0.8] flex flex-col items-center justify-center text-center px-4 py-6 md:py-12">
           <div className="w-full max-w-2xl space-y-6 md:space-y-10">
             <div className="flex items-center justify-center">
-              <div className="flex h-14 w-14 sm:h-16 sm:w-16 md:h-20 md:w-20 items-center justify-center overflow-hidden rounded-full shadow-sm">
-                <img
+              <div className="relative flex h-14 w-14 sm:h-16 sm:w-16 md:h-20 md:w-20 items-center justify-center overflow-hidden rounded-full shadow-sm">
+                <Image
                   src="/logo.png"
                   alt="CivicLens"
-                  className="h-full w-full object-cover"
+                  fill
+                  className="object-cover"
+                  priority
                 />
               </div>
             </div>
