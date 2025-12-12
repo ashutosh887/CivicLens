@@ -2,7 +2,7 @@
 
 import { SignedIn, SignedOut, SignInButton } from "@clerk/nextjs";
 import { Button } from "@/components/ui/button";
-import { ThemeToggle } from "@/components/ThemeToggle";
+import { ThemeToggle } from "@/components/global/ThemeToggle";
 import Link from "next/link";
 import config from "@/config";
 

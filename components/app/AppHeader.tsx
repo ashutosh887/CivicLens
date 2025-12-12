@@ -1,6 +1,6 @@
 "use client";
 
-import { ThemeToggle } from "@/components/ThemeToggle";
+import { ThemeToggle } from "@/components/global/ThemeToggle";
 import { Breadcrumbs } from "@/components/app/Breadcrumbs";
 import Link from "next/link";
 import Image from "next/image";
