@@ -1,36 +1,108 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# **CivicLens**
+**Bringing clarity to public services for everyone. 🔎**
 
-## Getting Started
+CivicLens is a Next.js-powered platform that helps users understand government schemes, public services, and civic information through natural language questions. It simplifies access to civic knowledge using AI-driven explanations, intuitive UI, and structured insights.
 
-First, run the development server:
+---
+
+## 🚀 Features
+
+- **AI-powered civic Q&A**  
+  Ask natural-language questions about schemes, public services, or government documents.
+
+- **Authentication & User Management**  
+  Integrated using Clerk.
+
+- **Searchable Civic Knowledge Base**  
+  Browse and explore public schemes and essential civic information.
+
+- **Clean & Modern UI**  
+  Built using TailwindCSS + shadcn/ui.
+
+- **Easy Configuration**  
+  All core app metadata (name, description, etc.) is stored inside a single `config/index.ts` file for instant updates.
+
+---
+
+## 🛠️ Tech Stack
+
+- **Framework:** Next.js  
+- **UI:** TailwindCSS, shadcn/ui  
+- **Auth:** Clerk  
+- **AI:** OpenAI  
+- **Deployment:** Vercel
+
+---
+
+## 📁 Project Structure
+
+```
+civiclens/
+├── app/
+├── components/
+├── config/
+├── hooks/
+├── lib/
+├── prisma/
+├── public/
+├── scripts/
+```
+
+---
+
+## 🧠 Cline Integration
+
+This project integrates **Cline CLI** to automate coding workflows and accelerate development.
+
+### 🔧 How Cline Was Used
+- **Autonomous Code Generation** – Generated boilerplate for components, API routes, and UI sections.
+- **Refactoring Assistance** – Restructured files, renamed components, reorganized codebase.
+- **Automated Documentation Updates** – Helped generate and maintain README and config files.
+- **Code Planning** – Multi-step task execution for features like knowledge base and Q&A flow.
+- **Developer Productivity** – On-demand coding agent during hackathon for rapid changes.
+
+### 🛠️ Cline Script Included
+To demonstrate usage for hackathon evaluation, the repository includes a sample Cline workflow script: at [cline-workflow.sh](./scripts/cline-workflow.sh)
+
+---
+
+## 🔮 Tools & Roles:
+
+### 1. Cline — Autonomous coding agent
+- Generated multi-file edits, boilerplate components, MCP helper templates.
+- Codebase: `scripts/civiclens-cline-workflow.sh`, `.clinerules`, `CLINE_GUIDE.md`
+
+---
+
+## 🚧 Development
+
+Install dependencies:
+
+```bash
+npm install
+```
+
+Run the dev server:
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Trigger Cline workflow (requires Cline CLI configured):
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```bash
+chmod +x scripts/civiclens-cline-workflow.sh
+./scripts/civiclens-cline-workflow.sh
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+---
 
-## Learn More
+## 🤝 Contributions
 
-To learn more about Next.js, take a look at the following resources:
+Contributions, issues, and feature requests are welcome!
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+---
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## 📜 License
 
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+MIT License.
