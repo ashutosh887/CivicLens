@@ -1,8 +1,10 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { Poppins } from "next/font/google";
+import { ClerkProvider } from "@clerk/nextjs";
 import config from "@/config";
 import { ClarityProvider } from "@/components/Clarity";
+import { ThemeProvider } from "@/components/ThemeProvider";
 
 const poppins = Poppins({
   subsets: ["latin"],
@@ -62,12 +64,21 @@ export default function RootLayout({
   const clarityProjectId = process.env.NEXT_PUBLIC_CLARITY_PROJECT_ID ?? "";
 
   return (
-    <html lang="en">
-      <body className={`${poppins.className} antialiased`}>
-        <ClarityProvider projectId={clarityProjectId}>
-          {children}
-        </ClarityProvider>
-      </body>
-    </html>
+    <ClerkProvider>
+      <html lang="en" suppressHydrationWarning>
+        <body className={`${poppins.className} antialiased`}>
+          <ThemeProvider
+            attribute="class"
+            defaultTheme="system"
+            enableSystem
+            disableTransitionOnChange
+          >
+            <ClarityProvider projectId={clarityProjectId}>
+              {children}
+            </ClarityProvider>
+          </ThemeProvider>
+        </body>
+      </html>
+    </ClerkProvider>
   );
 }
