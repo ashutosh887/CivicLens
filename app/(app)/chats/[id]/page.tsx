@@ -1,8 +1,7 @@
 import { ChatsSidebar } from "@/components/app/ChatsSidebar";
 import { ChatView } from "@/components/app/ChatView";
-import { currentUser } from "@clerk/nextjs/server";
 import { prisma } from "@/lib/prisma";
-import { checkDatabaseConnection, getOrCreateUser } from "@/lib/db";
+import { checkDatabaseConnection, getOrCreateUser, getAuthenticatedUser } from "@/lib/db";
 import { notFound, redirect } from "next/navigation";
 
 interface ChatPageProps {
@@ -11,16 +10,12 @@ interface ChatPageProps {
 
 export default async function ChatPage({ params }: ChatPageProps) {
   const { id } = await params;
-  const user = await currentUser();
-
-  if (!user) {
+  const authData = await getAuthenticatedUser();
+  if (!authData) {
     redirect("/");
   }
 
-  const email = user.emailAddresses[0]?.emailAddress;
-  if (!email) {
-    redirect("/");
-  }
+  const { user, email, name, avatar } = authData;
 
   const dbConnected = await checkDatabaseConnection();
   if (!dbConnected) {
@@ -38,11 +33,6 @@ export default async function ChatPage({ params }: ChatPageProps) {
 
   let dbUser;
   try {
-    const name = user.firstName && user.lastName 
-      ? `${user.firstName} ${user.lastName}`.trim()
-      : user.firstName || user.lastName || user.username || null;
-    const avatar = user.imageUrl || null;
-    
     dbUser = await getOrCreateUser(user.id, email, name, avatar);
   } catch (error) {
     console.error("Error getting or creating user:", error);

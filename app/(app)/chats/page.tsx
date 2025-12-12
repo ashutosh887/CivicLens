@@ -1,21 +1,16 @@
 import { ChatsSidebar } from "@/components/app/ChatsSidebar";
 import { ChatEmptyState } from "@/components/app/ChatEmptyState";
-import { currentUser } from "@clerk/nextjs/server";
 import { prisma } from "@/lib/prisma";
-import { checkDatabaseConnection, getOrCreateUser } from "@/lib/db";
+import { checkDatabaseConnection, getOrCreateUser, getAuthenticatedUser } from "@/lib/db";
 import { redirect } from "next/navigation";
 
 export default async function ChatsPage() {
-  const user = await currentUser();
-
-  if (!user) {
+  const authData = await getAuthenticatedUser();
+  if (!authData) {
     redirect("/");
   }
 
-  const email = user.emailAddresses[0]?.emailAddress;
-  if (!email) {
-    redirect("/");
-  }
+  const { user, email, name, avatar } = authData;
 
   let dbConnected = false;
   try {
@@ -54,11 +49,6 @@ export default async function ChatsPage() {
   let dbError = false;
   let errorMessage = "";
   try {
-    const name = user.firstName && user.lastName 
-      ? `${user.firstName} ${user.lastName}`.trim()
-      : user.firstName || user.lastName || user.username || null;
-    const avatar = user.imageUrl || null;
-
     dbUser = await getOrCreateUser(user.id, email, name, avatar);
   } catch (error: any) {
     console.error("Error getting or creating user:", error);

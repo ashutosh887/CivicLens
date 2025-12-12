@@ -1,40 +1,13 @@
 "use client";
 
-import { usePathname } from "next/navigation";
 import Link from "next/link";
 import { ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useChatStore } from "@/lib/stores/chatStore";
+import { useBreadcrumbs } from "@/hooks";
 
 export function Breadcrumbs() {
-  const pathname = usePathname();
-  const chatTitle = useChatStore((state) => state.chatTitle);
+  const breadcrumbs = useBreadcrumbs();
   
-  const truncateTitle = (title: string, maxLength: number = 30) => {
-    if (title.length <= maxLength) return title;
-    return title.slice(0, maxLength) + "...";
-  };
-  
-  const getBreadcrumbs = () => {
-    const segments = pathname.split("/").filter(Boolean);
-    const breadcrumbs = [];
-    
-    if (segments.includes("chats")) {
-      if (segments.length > 1 && segments[1] !== "chats") {
-        breadcrumbs.push({ label: "Chats", href: "/chats" });
-        const displayTitle = chatTitle ? truncateTitle(chatTitle) : "Chat";
-        breadcrumbs.push({ label: displayTitle, href: pathname });
-      } else if (pathname === "/chats") {
-        breadcrumbs.push({ label: "Chats", href: "/chats" });
-      }
-    } else if (segments.includes("settings")) {
-      breadcrumbs.push({ label: "Settings", href: "/settings" });
-    }
-    
-    return breadcrumbs;
-  };
-
-  const breadcrumbs = getBreadcrumbs();
   const isLast = (index: number) => index === breadcrumbs.length - 1;
 
   if (breadcrumbs.length === 0) {

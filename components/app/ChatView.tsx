@@ -1,11 +1,11 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback, useMemo } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Send } from "lucide-react";
-import { useChatStore } from "@/lib/stores/chatStore";
 import { cn } from "@/lib/utils";
+import { useSendMessage, useChatState } from "@/hooks";
 
 interface Message {
   id: string;
@@ -21,36 +21,31 @@ interface ChatViewProps {
 }
 
 export function ChatView({ chatId, initialMessages = [], chatTitle }: ChatViewProps) {
-  const [message, setMessage] = useState("");
   const [messages, setMessages] = useState<Message[]>(initialMessages);
-  const [isLoading, setIsLoading] = useState(false);
-  const inputRef = useRef<HTMLInputElement>(null);
-  const setChatTitle = useChatStore((state) => state.setChatTitle);
-  const setCurrentChatId = useChatStore((state) => state.setCurrentChatId);
+  
+  useChatState({ chatId, chatTitle });
 
-  useEffect(() => {
-    setChatTitle(chatTitle || null);
-    setCurrentChatId(chatId);
-    return () => {
-      setChatTitle(null);
-      setCurrentChatId(null);
-    };
-  }, [chatTitle, chatId, setChatTitle, setCurrentChatId]);
+  const { message, setMessage, isLoading, sendMessage, handleKeyDown, inputRef } = useSendMessage({
+    chatId,
+    onSuccess: (assistantMessage) => {
+      setMessages((prev) => [...prev, assistantMessage]);
+    },
+    onError: (errorMessage) => {
+      const errorMsg: Message = {
+        id: `error-${Date.now()}`,
+        role: "assistant",
+        content: errorMessage,
+        createdAt: new Date(),
+      };
+      setMessages((prev) => [...prev, errorMsg]);
+    },
+  });
 
   useEffect(() => {
     setMessages(initialMessages);
   }, [initialMessages]);
 
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      if (inputRef.current && !isLoading) {
-        inputRef.current.focus();
-      }
-    }, 100);
-    return () => clearTimeout(timer);
-  }, [chatId, isLoading]);
-
-  const handleSend = useCallback(async () => {
+  const handleSend = async () => {
     const trimmedMessage = message.trim();
     if (!trimmedMessage || isLoading) return;
     
@@ -62,50 +57,14 @@ export function ChatView({ chatId, initialMessages = [], chatTitle }: ChatViewPr
     };
     
     setMessages((prev) => [...prev, userMessage]);
-    setMessage("");
-    setIsLoading(true);
-    
-    try {
-      const response = await fetch(`/api/chats/${chatId}/messages`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ content: trimmedMessage }),
-      });
+    await sendMessage();
+  };
 
-      if (!response.ok) {
-        throw new Error("Failed to send message");
-      }
+  const handleKeyDownWrapper = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    handleKeyDown(e);
+  };
 
-      const data = await response.json();
-      setMessages((prev) => [...prev, data.assistantMessage]);
-    } catch (error) {
-      const errorMessage: Message = {
-        id: `error-${Date.now()}`,
-        role: "assistant",
-        content: "Sorry, I encountered an error. Please try again.",
-        createdAt: new Date(),
-      };
-      setMessages((prev) => [...prev, errorMessage]);
-    } finally {
-      setIsLoading(false);
-      setTimeout(() => {
-        if (inputRef.current) {
-          inputRef.current.focus();
-        }
-      }, 50);
-    }
-  }, [message, isLoading, chatId]);
-
-  const handleKeyDown = useCallback((e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === "Enter" && !e.shiftKey && !isLoading && message.trim()) {
-      e.preventDefault();
-      handleSend();
-    }
-  }, [handleSend, isLoading, message]);
-
-  const emptyState = useMemo(() => (
+  const emptyState = (
     <div className="flex h-full items-center justify-center">
       <div className="text-center space-y-2">
         <h3 className="text-lg font-semibold">Start a conversation</h3>
@@ -114,9 +73,9 @@ export function ChatView({ chatId, initialMessages = [], chatTitle }: ChatViewPr
         </p>
       </div>
     </div>
-  ), []);
+  );
 
-  const messagesList = useMemo(() => (
+  const messagesList = (
     <div className="space-y-6 max-w-3xl mx-auto">
       {messages.map((msg) => (
         <div
@@ -138,7 +97,7 @@ export function ChatView({ chatId, initialMessages = [], chatTitle }: ChatViewPr
         </div>
       ))}
     </div>
-  ), [messages]);
+  );
 
   return (
     <div className="flex h-full flex-col">
@@ -152,7 +111,7 @@ export function ChatView({ chatId, initialMessages = [], chatTitle }: ChatViewPr
             ref={inputRef}
             value={message}
             onChange={(e) => setMessage(e.target.value)}
-            onKeyDown={handleKeyDown}
+            onKeyDown={handleKeyDownWrapper}
             placeholder="Ask about any public service..."
             className="flex-1"
             disabled={isLoading}

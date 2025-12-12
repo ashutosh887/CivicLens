@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { useUser, SignOutButton } from "@clerk/nextjs";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -21,8 +21,9 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Plus, MessageSquare, Pencil, Trash2, Check, X, MoreVertical, Settings, LogOut } from "lucide-react";
+import { MessageSquare, Pencil, Trash2, Check, X, MoreVertical, Settings, LogOut } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useChatOperations } from "@/hooks";
 
 interface Chat {
   id: string;
@@ -36,33 +37,16 @@ interface ChatsSidebarProps {
 
 export function ChatsSidebar({ chats }: ChatsSidebarProps) {
   const pathname = usePathname();
-  const router = useRouter();
   const { user } = useUser();
-  const [isCreating, setIsCreating] = useState(false);
+  const { createChat, updateChat, deleteChat, isLoading } = useChatOperations();
   const [hoveredChat, setHoveredChat] = useState<string | null>(null);
-  const [isUpdating, setIsUpdating] = useState(false);
-  const [isDeleting, setIsDeleting] = useState(false);
   const [editingChatId, setEditingChatId] = useState<string | null>(null);
   const [editingTitle, setEditingTitle] = useState("");
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [chatToDelete, setChatToDelete] = useState<Chat | null>(null);
 
   const handleNewChat = async () => {
-    setIsCreating(true);
-    try {
-      const response = await fetch("/api/chats", {
-        method: "POST",
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        router.push(`/chats/${data.chat.id}`);
-        router.refresh();
-      }
-    } catch (error) {
-    } finally {
-      setIsCreating(false);
-    }
+    await createChat();
   };
 
   const handleRenameClick = (chat: Chat, e: React.MouseEvent) => {
@@ -78,30 +62,12 @@ export function ChatsSidebar({ chats }: ChatsSidebarProps) {
       return;
     }
 
-    setIsUpdating(true);
-    try {
-      const response = await fetch(`/api/chats/${chatId}`, {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ title: editingTitle.trim() }),
-      });
-
-      if (response.ok) {
-        setEditingChatId(null);
-        setEditingTitle("");
-        router.refresh();
-      } else {
-        const errorData = await response.json().catch(() => ({ error: "Unknown error" }));
-        console.error("Error renaming chat:", errorData);
-        alert(`Failed to rename chat: ${errorData.error || "Please try again."}`);
-      }
-    } catch (error) {
-      console.error("Error renaming chat:", error);
-      alert("Failed to rename chat. Please check your connection and try again.");
-    } finally {
-      setIsUpdating(false);
+    const result = await updateChat(chatId, editingTitle);
+    if (result.success) {
+      setEditingChatId(null);
+      setEditingTitle("");
+    } else {
+      alert(`Failed to rename chat: ${result.error || "Please try again."}`);
     }
   };
 
@@ -118,32 +84,12 @@ export function ChatsSidebar({ chats }: ChatsSidebarProps) {
   const handleDeleteConfirm = async () => {
     if (!chatToDelete) return;
 
-    setIsDeleting(true);
-    try {
-      const response = await fetch(`/api/chats/${chatToDelete.id}`, {
-        method: "DELETE",
-      });
-
-      if (response.ok) {
-        const deletedChatId = chatToDelete.id;
-        setDeleteDialogOpen(false);
-        setChatToDelete(null);
-        
-        if (pathname === `/chats/${deletedChatId}`) {
-          router.push("/chats");
-        }
-        
-        router.refresh();
-      } else {
-        const errorData = await response.json().catch(() => ({ error: "Unknown error" }));
-        console.error("Error deleting chat:", errorData);
-        alert(`Failed to delete chat: ${errorData.error || "Please try again."}`);
-      }
-    } catch (error) {
-      console.error("Error deleting chat:", error);
-      alert("Failed to delete chat. Please check your connection and try again.");
-    } finally {
-      setIsDeleting(false);
+    const result = await deleteChat(chatToDelete);
+    if (result.success) {
+      setDeleteDialogOpen(false);
+      setChatToDelete(null);
+    } else {
+      alert(`Failed to delete chat: ${result.error || "Please try again."}`);
     }
   };
 
@@ -152,10 +98,10 @@ export function ChatsSidebar({ chats }: ChatsSidebarProps) {
       <div className="px-3 pt-4 pb-2">
         <button
           onClick={handleNewChat}
-          disabled={isCreating || isUpdating || isDeleting}
+          disabled={isLoading}
           className={cn(
             "flex items-center gap-2 text-sm text-sidebar-foreground hover:text-sidebar-foreground/80 transition-colors cursor-pointer px-3 py-1.5 rounded-md hover:bg-sidebar-accent/50",
-            (isCreating || isUpdating || isDeleting) && "opacity-50 cursor-not-allowed"
+            isLoading && "opacity-50 cursor-not-allowed"
           )}
           aria-label="New chat"
         >
@@ -200,24 +146,24 @@ export function ChatsSidebar({ chats }: ChatsSidebarProps) {
                         value={editingTitle}
                         onChange={(e) => setEditingTitle(e.target.value)}
                         onKeyDown={(e) => {
-                          if (e.key === "Enter" && editingTitle.trim() && !isUpdating) {
+                          if (e.key === "Enter" && editingTitle.trim() && !isLoading) {
                             e.preventDefault();
                             handleInlineRenameSave(chat.id);
-                          } else if (e.key === "Escape" && !isUpdating) {
+                          } else if (e.key === "Escape" && !isLoading) {
                             e.preventDefault();
                             handleInlineRenameCancel();
                           }
                         }}
                         className="h-7 text-sm flex-1"
                         autoFocus
-                        disabled={isUpdating}
+                        disabled={isLoading}
                       />
                       <Button
                         variant="ghost"
                         size="icon"
                         className="h-7 w-7"
                         onClick={() => handleInlineRenameSave(chat.id)}
-                        disabled={isUpdating || !editingTitle.trim() || isDeleting}
+                        disabled={isLoading || !editingTitle.trim()}
                         title="Save"
                         type="button"
                         aria-label="Save rename"
@@ -229,7 +175,7 @@ export function ChatsSidebar({ chats }: ChatsSidebarProps) {
                         size="icon"
                         className="h-7 w-7"
                         onClick={handleInlineRenameCancel}
-                        disabled={isUpdating}
+                        disabled={isLoading}
                         title="Cancel"
                         type="button"
                         aria-label="Cancel rename"
@@ -279,7 +225,7 @@ export function ChatsSidebar({ chats }: ChatsSidebarProps) {
                               }}
                               title="More options"
                               type="button"
-                              disabled={isUpdating || isDeleting || isCreating}
+                              disabled={isLoading}
                               aria-label="More options"
                             >
                               <MoreVertical className="h-3.5 w-3.5" />
@@ -290,11 +236,11 @@ export function ChatsSidebar({ chats }: ChatsSidebarProps) {
                               onClick={(e) => {
                                 e.preventDefault();
                                 e.stopPropagation();
-                                if (!isUpdating && !isDeleting) {
+                                if (!isLoading) {
                                   handleRenameClick(chat, e);
                                 }
                               }}
-                              disabled={isUpdating || isDeleting}
+                              disabled={isLoading}
                             >
                               <Pencil className="mr-2 h-4 w-4" />
                               <span>Rename</span>
@@ -304,12 +250,12 @@ export function ChatsSidebar({ chats }: ChatsSidebarProps) {
                               onClick={(e) => {
                                 e.preventDefault();
                                 e.stopPropagation();
-                                if (!isDeleting && !isUpdating) {
+                                if (!isLoading) {
                                   handleDeleteClick(chat);
                                 }
                               }}
                               className="text-destructive focus:text-destructive"
-                              disabled={isDeleting || isUpdating}
+                              disabled={isLoading}
                             >
                               <Trash2 className="mr-2 h-4 w-4" />
                               <span>Delete</span>
@@ -384,16 +330,16 @@ export function ChatsSidebar({ chats }: ChatsSidebarProps) {
             <Button
               variant="outline"
               onClick={() => setDeleteDialogOpen(false)}
-              disabled={isDeleting || isUpdating || isCreating}
+              disabled={isLoading}
             >
               Cancel
             </Button>
             <Button
               variant="destructive"
               onClick={handleDeleteConfirm}
-              disabled={isDeleting || isUpdating || isCreating}
+              disabled={isLoading}
             >
-              {isDeleting ? "Deleting..." : "Delete"}
+              {isLoading ? "Deleting..." : "Delete"}
             </Button>
           </DialogFooter>
         </DialogContent>

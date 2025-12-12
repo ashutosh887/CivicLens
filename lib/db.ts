@@ -1,9 +1,26 @@
 import { prisma } from "./prisma";
+import { currentUser } from "@clerk/nextjs/server";
 
-/**
- * Check if database connection is healthy
- * @returns true if connection is healthy, false otherwise
- */
+export function extractUserName(user: { firstName?: string | null; lastName?: string | null; username?: string | null }): string | null {
+  if (user.firstName && user.lastName) {
+    return `${user.firstName} ${user.lastName}`.trim();
+  }
+  return user.firstName || user.lastName || user.username || null;
+}
+
+export async function getAuthenticatedUser() {
+  const user = await currentUser();
+  if (!user) return null;
+  
+  const email = user.emailAddresses[0]?.emailAddress;
+  if (!email) return null;
+  
+  const name = extractUserName(user);
+  const avatar = user.imageUrl || null;
+  
+  return { user, email, name, avatar };
+}
+
 export async function checkDatabaseConnection(): Promise<boolean> {
   try {
     await Promise.race([
@@ -13,26 +30,11 @@ export async function checkDatabaseConnection(): Promise<boolean> {
       )
     ]);
     return true;
-  } catch (error: any) {
-    const isConnectionError = 
-      error?.name === "PrismaClientInitializationError" ||
-      error?.constructor?.name === "PrismaClientInitializationError" ||
-      error?.message?.includes("connection") ||
-      error?.message?.includes("DNS") ||
-      error?.message?.includes("ECONNREFUSED") ||
-      error?.message?.includes("no record found") ||
-      error?.message?.includes("Error creating a database connection") ||
-      error?.code === "ECONNREFUSED" ||
-      error?.code === "ENOTFOUND";
-    
+  } catch {
     return false;
   }
 }
 
-/**
- * Get or create user with proper error handling and upsert logic
- * Uses upsert to avoid race conditions
- */
 export async function getOrCreateUser(
   clerkId: string,
   email: string,
