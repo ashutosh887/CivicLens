@@ -1,0 +1,110 @@
+# CivicLens Project Rules
+
+## Project Overview
+CivicLens is a civic technology application that helps citizens understand government schemes, public services, and benefits through natural language queries. The goal is to make complex government information accessible and understandable for everyone.
+
+## Tech Stack
+- **Framework**: Next.js 16 with App Router
+- **Database**: Prisma ORM with MongoDB
+- **Authentication**: Clerk
+- **Styling**: Tailwind CSS with shadcn/ui components
+- **Deployment**: Vercel
+
+## Project Structure
+```
+app/              # Next.js App Router pages
+├── (app)/        # Authenticated routes (chats, settings)
+├── api/          # API routes
+└── [pages]/      # Public pages (about, contact, etc.)
+components/       # React components
+├── app/          # App-specific components
+├── global/       # Global components (theme, providers)
+├── home/         # Landing page components
+└── ui/           # shadcn/ui base components
+config/           # Application configuration
+hooks/            # Custom React hooks
+lib/              # Utilities, database, stores
+prisma/           # Database schema
+```
+
+## Coding Standards
+
+### TypeScript
+- Use TypeScript strict mode
+- Prefer interfaces over types for object definitions
+- Always type function parameters and return values
+- Use Zod for runtime validation
+
+### React/Next.js
+- Use React Server Components by default
+- Add "use client" only when client-side features are needed
+- Use proper error boundaries and loading states
+- Implement proper SEO with metadata
+
+### API Routes
+- All API routes must have proper error handling with try/catch
+- Return consistent JSON response format: `{ success: boolean, data?: any, error?: string }`
+- Validate all inputs before processing
+- Use appropriate HTTP status codes
+
+### Styling
+- Use Tailwind CSS utility classes
+- Use CSS variables for theme colors
+- Ensure responsive design (mobile-first)
+- Follow accessibility guidelines (WCAG 2.1 AA)
+
+## Database Schema Guidelines
+- Use Prisma migrations for all schema changes
+- Add proper indexes for frequently queried fields
+- Use relations appropriately
+- Include created_at and updated_at timestamps
+
+## Security
+- Never expose API keys in client code
+- Use Clerk for all authentication
+- Validate user permissions on API routes
+- Sanitize user inputs to prevent XSS
+
+## AI Response Guidelines
+When building AI features:
+- Provide clear, plain-language responses
+- Always cite sources when possible
+- Include disclaimers for legal/official matters
+- Support multilingual responses (Hindi, regional languages)
+
+## Common Tasks
+
+### Adding a New API Endpoint
+1. Create route in `app/api/[resource]/route.ts`
+2. Add input validation with Zod
+3. Implement proper error handling
+4. Add authentication check if needed
+5. Test with different scenarios
+
+### Adding a New Component
+1. Create in appropriate folder under `components/`
+2. Use TypeScript interfaces for props
+3. Make it accessible (aria labels, keyboard navigation)
+4. Add responsive styles
+
+### Database Changes
+1. Modify `prisma/schema.prisma`
+2. Run `npx prisma migrate dev --name description`
+3. Update relevant API routes
+4. Test the migration
+
+## Accessibility Priority
+This is a civic application - accessibility is critical:
+- Screen reader support
+- Keyboard navigation
+- High contrast text
+- Clear error messages
+- Simple, plain language
+
+## Testing Philosophy
+- Test user-facing functionality
+- Ensure API routes handle edge cases
+- Visual testing for UI components
+- Accessibility audits
+
+Remember: CivicLens serves citizens who may not be tech-savvy. Always prioritize clarity and simplicity.
