@@ -2,7 +2,7 @@ import { ChatsSidebar } from "@/components/app/ChatsSidebar";
 import { ChatView } from "@/components/app/ChatView";
 import { prisma } from "@/lib/prisma";
 import { checkDatabaseConnection, getOrCreateUser, getAuthenticatedUser } from "@/lib/db";
-import { notFound, redirect } from "next/navigation";
+import { redirect } from "next/navigation";
 
 interface ChatPageProps {
   params: Promise<{ id: string }>;
@@ -63,7 +63,7 @@ export default async function ChatPage({ params }: ChatPageProps) {
   });
 
   if (!chat) {
-    notFound();
+    redirect("/chats");
   }
 
   const chats = await prisma.chat.findMany({
