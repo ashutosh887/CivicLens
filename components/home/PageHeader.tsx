@@ -15,9 +15,9 @@ export function PageHeader({ title, subtitle, showLogo = true }: PageHeaderProps
         <div className="flex items-center justify-center">
           <Link
             href="/"
-            className="group inline-flex items-center gap-2 rounded-full bg-muted/50 px-3 py-1.5 pr-4 transition-all hover:bg-muted hover:shadow-sm"
+            className="group inline-flex items-center gap-2 rounded-full bg-white px-3 py-1.5 pr-4 transition-all hover:bg-white/90 hover:shadow-sm border border-border/50"
           >
-            <div className="relative flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center overflow-hidden rounded-full ring-1 ring-border/50">
+            <div className="relative flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center overflow-hidden rounded-full bg-white ring-1 ring-border/50">
               <Image
                 src="/logo.png"
                 alt={config.appName}

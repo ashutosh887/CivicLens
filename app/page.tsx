@@ -1,8 +1,16 @@
 import config from "@/config";
 import { Hero } from "@/components/home/Hero";
 import { Footer } from "@/components/home/Footer";
+import { auth } from "@clerk/nextjs/server";
+import { redirect } from "next/navigation";
 
-export default function Home() {
+export default async function Home() {
+  const { userId } = await auth();
+
+  if (userId) {
+    redirect("/chats");
+  }
+
   const hero = config.landing.hero;
   const footer = config.landing.footer;
 

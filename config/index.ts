@@ -2,6 +2,7 @@ const config = {
   appName: "CivicLens",
   appDescription: "Bringing clarity to public services for everyone.",
   appUrl: "http://tryciviclens.vercel.app",
+  adminEmails: ["ashutoshj887@gmail.com"],
   founder: {
     name: "Ashutosh",
     social: {
