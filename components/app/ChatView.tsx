@@ -4,6 +4,8 @@ import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Send } from "lucide-react";
+import { useChatStore } from "@/lib/stores/chat-store";
+import { cn } from "@/lib/utils";
 
 interface Message {
   id: string;
@@ -15,13 +17,25 @@ interface Message {
 interface ChatViewProps {
   chatId: string;
   initialMessages?: Message[];
+  chatTitle?: string;
 }
 
-export function ChatView({ chatId, initialMessages = [] }: ChatViewProps) {
+export function ChatView({ chatId, initialMessages = [], chatTitle }: ChatViewProps) {
   const [message, setMessage] = useState("");
   const [messages, setMessages] = useState<Message[]>(initialMessages);
   const [isLoading, setIsLoading] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+  const setChatTitle = useChatStore((state) => state.setChatTitle);
+  const setCurrentChatId = useChatStore((state) => state.setCurrentChatId);
+
+  useEffect(() => {
+    setChatTitle(chatTitle || null);
+    setCurrentChatId(chatId);
+    return () => {
+      setChatTitle(null);
+      setCurrentChatId(null);
+    };
+  }, [chatTitle, chatId, setChatTitle, setCurrentChatId]);
 
   useEffect(() => {
     setMessages(initialMessages);
@@ -112,13 +126,14 @@ export function ChatView({ chatId, initialMessages = [] }: ChatViewProps) {
           }`}
         >
           <div
-            className={`max-w-[80%] rounded-lg px-4 py-2 ${
+            className={cn(
+              "max-w-[80%] rounded-lg px-4 py-2.5 shadow-sm",
               msg.role === "user"
                 ? "bg-primary text-primary-foreground"
-                : "bg-muted text-foreground"
-            }`}
+                : "bg-muted text-foreground border border-border/50"
+            )}
           >
-            <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
+            <p className="text-sm whitespace-pre-wrap leading-relaxed">{msg.content}</p>
           </div>
         </div>
       ))}
@@ -131,8 +146,8 @@ export function ChatView({ chatId, initialMessages = [] }: ChatViewProps) {
         {messages.length === 0 ? emptyState : messagesList}
       </div>
 
-      <div className="border-t border-border p-4">
-        <div className="max-w-3xl mx-auto flex gap-2">
+      <div className="border-t border-border bg-background/95 backdrop-blur-sm">
+        <div className="max-w-3xl mx-auto p-4 flex gap-2">
           <Input
             ref={inputRef}
             value={message}
@@ -147,6 +162,7 @@ export function ChatView({ chatId, initialMessages = [] }: ChatViewProps) {
             size="icon" 
             disabled={isLoading || !message.trim()}
             aria-label="Send message"
+            className="shrink-0"
           >
             <Send className="h-4 w-4" />
           </Button>

@@ -149,18 +149,19 @@ export function ChatsSidebar({ chats }: ChatsSidebarProps) {
 
   return (
     <div className="flex h-full w-64 flex-col border-r border-border bg-sidebar">
-      <div className="flex items-center justify-between border-b border-border px-4 py-3 w-full">
-        <h2 className="text-sm font-semibold text-sidebar-foreground">Chats</h2>
-        <Button
-          variant="ghost"
-          size="icon"
-          className="h-8 w-8"
+      <div className="px-3 pt-4 pb-2">
+        <button
           onClick={handleNewChat}
           disabled={isCreating || isUpdating || isDeleting}
+          className={cn(
+            "flex items-center gap-2 text-sm text-sidebar-foreground hover:text-sidebar-foreground/80 transition-colors cursor-pointer px-3 py-1.5 rounded-md hover:bg-sidebar-accent/50",
+            (isCreating || isUpdating || isDeleting) && "opacity-50 cursor-not-allowed"
+          )}
           aria-label="New chat"
         >
-          <Plus className="h-4 w-4" />
-        </Button>
+          <Pencil className="h-4 w-4" />
+          <span>New chat</span>
+        </button>
       </div>
       
       <div className="flex-1 overflow-y-auto">
@@ -172,7 +173,9 @@ export function ChatsSidebar({ chats }: ChatsSidebarProps) {
             </p>
           </div>
         ) : (
-          <div className="space-y-1 p-2">
+          <div className="px-3 pt-2 pb-2">
+            <h3 className="text-xs font-medium text-muted-foreground mb-3 px-3">Your chats</h3>
+            <div className="space-y-1">
             {chats.map((chat) => {
               const isActive = pathname === `/chats/${chat.id}`;
               const isHovered = hoveredChat === chat.id;
@@ -181,7 +184,7 @@ export function ChatsSidebar({ chats }: ChatsSidebarProps) {
                   key={chat.id}
                   className={cn(
                     "group relative flex items-center gap-2 rounded-lg transition-colors w-full",
-                    isActive && "bg-sidebar-accent text-sidebar-accent-foreground",
+                    isActive && "bg-sidebar-accent text-sidebar-accent-foreground shadow-sm",
                     isHovered && !isActive && "bg-sidebar-accent/50"
                   )}
                   onMouseEnter={() => setHoveredChat(chat.id)}
@@ -239,16 +242,24 @@ export function ChatsSidebar({ chats }: ChatsSidebarProps) {
                       <Link
                         href={`/chats/${chat.id}`}
                         className={cn(
-                          "flex items-center gap-3 rounded-lg px-3 py-2 text-sm flex-1 min-w-0 transition-colors",
-                          isActive && "bg-sidebar-accent text-sidebar-accent-foreground"
+                          "flex items-center gap-3 rounded-lg px-3 py-2 text-sm flex-1 min-w-0 transition-colors cursor-pointer",
+                          isActive 
+                            ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium" 
+                            : "hover:bg-sidebar-accent/50"
                         )}
                       >
-                        <MessageSquare className="h-4 w-4 shrink-0" />
-                        <span className="truncate flex-1">{chat.title}</span>
+                        <MessageSquare className={cn(
+                          "h-4 w-4 shrink-0",
+                          isActive && "text-sidebar-accent-foreground"
+                        )} />
+                        <span className={cn(
+                          "truncate flex-1",
+                          isActive && "font-medium"
+                        )}>{chat.title}</span>
                       </Link>
                       <div 
                         className={cn(
-                          "pr-2 transition-opacity duration-150 flex-shrink-0",
+                          "pr-2 transition-opacity duration-150 shrink-0",
                           isHovered ? "opacity-100" : "opacity-0"
                         )}
                       >
@@ -311,6 +322,7 @@ export function ChatsSidebar({ chats }: ChatsSidebarProps) {
                 </div>
               );
             })}
+            </div>
           </div>
         )}
       </div>
@@ -341,7 +353,7 @@ export function ChatsSidebar({ chats }: ChatsSidebarProps) {
         </div>
         <SignOutButton redirectUrl="/">
           <Button
-            variant="default"
+            variant="outline"
             size="sm"
             className="w-full justify-between"
             type="button"

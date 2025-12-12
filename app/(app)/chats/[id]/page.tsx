@@ -101,7 +101,7 @@ export default async function ChatPage({ params }: ChatPageProps) {
     <div className="flex h-full">
       <ChatsSidebar chats={formattedChats} />
       <div className="flex-1 flex flex-col">
-        <ChatView chatId={id} initialMessages={formattedMessages} />
+        <ChatView chatId={id} initialMessages={formattedMessages} chatTitle={chat.title} />
       </div>
     </div>
   );

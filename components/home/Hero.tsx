@@ -54,10 +54,10 @@ export function Hero({ hero }: HeroProps) {
           <div className="flex flex-col sm:flex-row gap-2 rounded-xl border border-border bg-background p-4 shadow-lg">
             <Input
               placeholder={hero.searchPlaceholder}
-              className="h-12 flex-1 border-border bg-background text-base focus-visible:ring-2 focus-visible:ring-ring"
+              className="h-10 flex-1 border-border bg-background text-base focus-visible:ring-2 focus-visible:ring-ring"
             />
             <SignInButton mode="modal" forceRedirectUrl="/chats">
-              <Button size="lg" className="h-12 text-base">
+              <Button size="lg" className="h-10 text-base">
                 Sign in to explore
               </Button>
             </SignInButton>
