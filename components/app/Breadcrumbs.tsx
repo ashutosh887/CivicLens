@@ -4,7 +4,7 @@ import { usePathname } from "next/navigation";
 import Link from "next/link";
 import { ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useChatStore } from "@/lib/stores/chat-store";
+import { useChatStore } from "@/lib/stores/chatStore";
 
 export function Breadcrumbs() {
   const pathname = usePathname();

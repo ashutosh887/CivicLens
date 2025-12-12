@@ -4,7 +4,7 @@ import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Send } from "lucide-react";
-import { useChatStore } from "@/lib/stores/chat-store";
+import { useChatStore } from "@/lib/stores/chatStore";
 import { cn } from "@/lib/utils";
 
 interface Message {
