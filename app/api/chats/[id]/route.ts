@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { checkDatabaseConnection, getOrCreateUser, getAuthenticatedUser } from "@/lib/db";
 import { NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
 
 interface RouteParams {
   params: Promise<{ id: string }>;
@@ -50,6 +51,9 @@ export async function PATCH(req: Request, { params }: RouteParams) {
       where: { id },
       data: { title: title.trim() },
     });
+
+    revalidatePath(`/chats/${id}`);
+    revalidatePath("/chats");
 
     return NextResponse.json({ chat: updatedChat });
   } catch (error) {

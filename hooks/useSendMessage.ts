@@ -39,6 +39,10 @@ export function useSendMessage({
       createdAt: new Date(),
     };
 
+    if (onStreamChunk) {
+      onStreamChunk(`__USER_MESSAGE_UPDATE__${JSON.stringify(userMessage)}`, "");
+    }
+
     setMessage("");
     setIsLoading(true);
 

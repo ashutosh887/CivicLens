@@ -124,16 +124,17 @@ async function extractPDFContent(
     
     try {
       const dynamicImport = new Function('specifier', 'return import(specifier)');
-      const pdfParseModule = await dynamicImport('pdf-parse').catch(() => null);
+      const pdfParseModule: any = await dynamicImport('pdf-parse').catch(() => null);
+      
       if (pdfParseModule) {
         const pdfParse = pdfParseModule.default || pdfParseModule;
+        
         if (pdfParse && typeof pdfParse === 'function') {
           const pdfData = await pdfParse(buffer);
           pdfText = pdfData?.text || "";
         }
       }
     } catch (importError: any) {
-      // pdf-parse not available or failed, continue with fallback
     }
 
     if (pdfText && pdfText.trim().length > 0) {
