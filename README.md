@@ -1,176 +1,139 @@
-# **CivicLens**
-**Bringing clarity to public services for everyone. 🔎**
+# CivicLens
 
-CivicLens is a Next.js-powered platform that helps users understand government schemes, public services, and civic information through natural language questions. It simplifies access to civic knowledge using AI-driven explanations, intuitive UI, and structured insights.
+Making government information easier to understand and access.
 
----
-
-## 🚀 Features
-
-- **AI-powered civic Q&A with Streaming**  
-  Ask natural-language questions about schemes, public services, or government documents. Get real-time streaming responses powered by OpenAI. Supports multiple countries.
-
-- **Multi-Country Support**  
-  Get information about government schemes, benefits, and processes for India, USA, UK, Canada, Australia, and more.
-
-- **Intelligent Insights**  
-  Automatic entity extraction, query classification, and suggested actions from your queries.
-
-- **Automated Workflows**  
-  Kestra-powered workflows for weekly scheme updates, eligibility rule extraction, and autocomplete suggestions across multiple countries.
-
-- **Fine-Tuned AI Model**  
-  Custom model trained on civic queries from multiple countries using Oumi.
-
-- **Authentication & User Management**  
-  Integrated using Clerk with secure user sessions.
-
-- **Clean & Modern UI**  
-  Built using TailwindCSS + shadcn/ui with dark mode support.
+CivicLens is a chat-based platform that helps people find answers about government schemes, public services, and civic processes. Instead of digging through government websites, you can just ask questions in plain English and get clear answers.
 
 ---
 
-## 🛠️ Tech Stack
+## What it does
 
-- **Framework:** Next.js 16  
-- **UI:** TailwindCSS, shadcn/ui  
-- **Auth:** Clerk  
-- **AI:** OpenAI (GPT-3.5-turbo)  
-- **Workflows:** Kestra  
-- **Fine-tuning:** Oumi  
-- **Deployment:** Vercel  
-- **Code Review:** CodeRabbit  
-- **Development Agent:** Cline
+**Chat interface with streaming responses**  
+Ask questions about government schemes, eligibility, or how to apply for benefits. Responses stream in real-time using OpenAI's API. Works for multiple countries including India, USA, UK, Canada, and Australia.
 
----
+**File uploads**  
+Upload PDFs or documents related to government schemes, and the system extracts relevant information to help answer your questions.
 
-## 🎯 Sponsor Technology Integrations
+**Query insights**  
+Automatically extracts entities (schemes, offices, documents) from your questions and suggests relevant actions. Also classifies queries to better understand what you're looking for.
 
-### 1. OpenAI — AI-Powered Civic Reasoning Engine
-- **Streaming Chat**: Real-time AI responses using GPT-3.5-turbo
-- **Multi-Country Support**: Handles queries for India, USA, UK, Canada, Australia
-- **Query Classification**: Automatic categorization of civic queries
-- **Entity Extraction**: Extract schemes, offices, documents from queries
-- **Document Generation**: AI-powered RTI/FOIA requests, complaint letters, eligibility summaries
-- **Location**: `lib/ai/openai.ts`, `app/api/ai/*`
+**Kestra workflows**  
+Automated workflows that can crawl government portals, extract eligibility rules from PDFs, and generate autocomplete suggestions. These run via webhooks that integrate with the main app.
 
-### 2. Kestra — Automated Government Data Workflows
-- **Weekly Scheme Updates**: Automated crawling and summarization of government portals (India, USA, UK)
-- **Eligibility Rule Extractor**: PDF parsing and structured rule extraction
-- **Autocomplete Suggestions**: Intelligent scheme suggestions based on user profiles
-- **Location**: `kestra/workflows/*.yaml`
-
-### 3. Cline — Autonomous Development Agent
-- **Code Generation**: Automated boilerplate and component creation
-- **Refactoring**: Code restructuring and optimization
-- **Multi-step Development**: Complex feature implementation workflows
-- **Location**: `.clinerules`, `CLINE_GUIDE.md`, `scripts/cline-workflow.sh`
-
-### 4. Vercel — Production Deployment
-- **Edge Functions**: Low-latency AI streaming responses
-- **Global CDN**: Fast content delivery worldwide
-- **Automatic Deployments**: GitHub integration for CI/CD
-
-### 5. CodeRabbit — AI Code Review
-- **Automated PR Reviews**: AI-powered code quality checks
-- **Architecture Suggestions**: Best practices and improvements
-- **Documentation**: Automatic documentation generation
-
-### 6. Oumi — Fine-Tuned Civic Model
-- **Custom Dataset**: 12 civic Q&A examples covering India, USA, UK, Canada, Australia
-- **Fine-tuning Config**: `oumi/config.yaml` for LoRA fine-tuning
-- **Domain Expertise**: Specialized for government schemes across multiple countries
-- **Location**: `oumi/` directory
+**Oumi fine-tuning**  
+Custom dataset with 12 civic Q&A examples covering multiple countries. Can be used to fine-tune a model for better civic-specific responses, though it's optional and the app works fine with standard OpenAI models.
 
 ---
 
-## 🚧 Development
+## Tech stack
+
+- **Next.js 16** - React framework
+- **MongoDB** - Database (via Prisma)
+- **Clerk** - Authentication
+- **OpenAI** - AI chat responses (GPT-3.5-turbo)
+- **Kestra** - Workflow automation
+- **Oumi** - Model fine-tuning (optional)
+- **TailwindCSS + shadcn/ui** - UI components
+- **Vercel** - Deployment
+
+---
+
+## Sponsor integrations
+
+### OpenAI
+The main AI engine. Handles streaming chat responses, query classification, entity extraction, and document generation (RTI/FOIA requests, complaint letters, eligibility summaries). Code is in `lib/ai/` and `app/api/ai/`.
+
+### Kestra
+Three workflows for automating government data tasks:
+- Weekly scheme updates (crawls government portals)
+- Eligibility rule extractor (parses PDFs)
+- Autocomplete suggestions (matches queries to schemes)
+
+Workflows are in `kestra/workflows/` and integrate via webhook endpoints in `app/api/kestra/webhook/`.
+
+### Oumi
+Fine-tuning setup for a custom civic model. Dataset has 12 examples covering India, USA, UK, Canada, and Australia. Config is in `oumi/config.yaml`. The app can use a fine-tuned model if available, but falls back to standard OpenAI if not.
+
+### Cline
+Used during development for code generation, refactoring, and multi-step feature work. `.clinerules` file contains project-specific guidelines. There's a sample workflow script at `scripts/cline-workflow.sh`.
+
+### Vercel
+Deployed on Vercel with edge functions for low-latency responses. GitHub integration handles automatic deployments.
+
+---
+
+## Getting started
 
 ### Prerequisites
 
-- Node.js 18+ 
-- MongoDB (or MongoDB Atlas)
-- API key for OpenAI
+- Node.js 18+
+- MongoDB (local or Atlas)
+- OpenAI API key
+- Clerk account (for auth)
 
 ### Setup
 
-1. **Install dependencies:**
+1. Install dependencies:
 ```bash
 npm install
 ```
 
-2. **Set up environment variables:**
+2. Set up environment variables:
 ```bash
 cp .env.example .env
-# Edit .env with your API keys and database URL
+# Edit .env with your keys
 ```
 
-3. **Set up database:**
+Required variables:
+- `OPENAI_API_KEY` - OpenAI API key
+- `DATABASE_URL` - MongoDB connection string
+- `CLERK_SECRET_KEY` - Clerk secret key
+- `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` - Clerk public key
+- `KESTRA_URL` - Kestra instance URL (optional)
+- `KESTRA_AUTH` - Base64 encoded Kestra credentials (optional)
+
+3. Set up the database:
 ```bash
 npx prisma generate
 npx prisma db push
 ```
 
-4. **Run the dev server:**
+4. Run the dev server:
 ```bash
 npm run dev
 ```
 
-5. **Deploy Kestra workflows**:
+5. (Optional) Set up Kestra:
    - Install Kestra: https://kestra.io/docs/getting-started
-   - Deploy workflows from `kestra/workflows/` directory
-   - Set `KESTRA_URL` and `KESTRA_AUTH` in `.env`
+   - Deploy workflows from `kestra/workflows/`
+   - Configure CORS using `kestra/application.yml`
 
-6. **Fine-tune with Oumi** (optional):
+6. (Optional) Fine-tune with Oumi:
    ```bash
    pip install oumi[gpu]
    oumi train -c oumi/config.yaml
    ```
 
-### Environment Variables
+---
 
-See `.env.example` for required variables:
-- `OPENAI_API_KEY` - OpenAI API key (required)
-- `DATABASE_URL` - MongoDB connection string
-- `CLERK_SECRET_KEY` - Clerk authentication secret
-- `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` - Clerk public key
-- `KESTRA_URL` - Kestra instance URL (optional, for workflow automation)
-- `KESTRA_AUTH` - Base64 encoded Kestra credentials (optional)
+## Project structure
+
+- `app/` - Next.js app router pages and API routes
+- `components/` - React components (UI, chat, file upload)
+- `lib/` - Core logic (AI services, database, file extraction)
+- `hooks/` - React hooks for chat operations
+- `prisma/` - Database schema
+- `kestra/workflows/` - Kestra workflow definitions
+- `oumi/` - Fine-tuning config and dataset
 
 ---
 
-## 📋 Setup Checklist
+## Development notes
 
-See [SETUP_CHECKLIST.md](./SETUP_CHECKLIST.md) for detailed step-by-step instructions on:
-- Setting up Kestra workflows
-- Training Oumi model
-- Deploying to production
-- Demo preparation
+The app uses streaming responses for chat, which provides a better user experience. File uploads are stored in MongoDB (base64 encoded for small files). The Kestra workflows are separate and can be deployed independently - they communicate with the main app via webhooks.
 
 ---
 
-## 🧠 Cline Integration
+## License
 
-This project integrates **Cline CLI** to automate coding workflows and accelerate development.
-
-### 🔧 How Cline Was Used
-- **Autonomous Code Generation** – Generated boilerplate for components, API routes, and UI sections.
-- **Refactoring Assistance** – Restructured files, renamed components, reorganized codebase.
-- **Automated Documentation Updates** – Helped generate and maintain README and config files.
-- **Code Planning** – Multi-step task execution for features like knowledge base and Q&A flow.
-- **Developer Productivity** – On-demand coding agent during hackathon for rapid changes.
-
-### 🛠️ Cline Script Included
-To demonstrate usage for hackathon evaluation, the repository includes a sample Cline workflow script: at [cline-workflow.sh](./scripts/cline-workflow.sh)
-
----
-
-## 🤝 Contributions
-
-Contributions, issues, and feature requests are welcome!
-
----
-
-## 📜 License
-
-MIT License.
+MIT
