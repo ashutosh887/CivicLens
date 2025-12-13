@@ -30,7 +30,6 @@ export function useSendMessage({
 
   const sendMessage = useCallback(async () => {
     const trimmedMessage = message.trim();
-    // Allow sending with files even if message is empty
     if ((!trimmedMessage && (!fileIds || fileIds.length === 0)) || isLoading) return null;
 
     const userMessage: Message = {

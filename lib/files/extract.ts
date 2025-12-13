@@ -1,9 +1,3 @@
-/**
- * File Content Extraction
- * 
- * Extracts text content from various file types for AI processing
- */
-
 import { prisma } from "@/lib/prisma";
 
 export interface FileContent {
@@ -13,9 +7,6 @@ export interface FileContent {
   error?: string;
 }
 
-/**
- * Extract text content from a file
- */
 export async function extractFileContent(fileId: string): Promise<FileContent | null> {
   try {
     const file = await prisma.file.findUnique({
@@ -26,13 +17,10 @@ export async function extractFileContent(fileId: string): Promise<FileContent | 
       return null;
     }
 
-    // Get file data
     let fileBuffer: Buffer;
     if (file.storageType === "mongodb" && file.data) {
       fileBuffer = Buffer.from(file.data, "base64");
     } else {
-      // For GridFS or other storage types, we'd need to fetch differently
-      // For now, return null if not in MongoDB storage
       return {
         filename: file.originalName,
         mimeType: file.mimeType,
@@ -41,7 +29,6 @@ export async function extractFileContent(fileId: string): Promise<FileContent | 
       };
     }
 
-    // Extract content based on file type
     if (file.mimeType === "application/pdf") {
       return await extractPDFContent(fileBuffer, file.originalName, file.mimeType);
     } else if (file.mimeType.startsWith("text/")) {
@@ -86,23 +73,12 @@ export async function extractFileContent(fileId: string): Promise<FileContent | 
   }
 }
 
-/**
- * Extract text from PDF
- * Note: This is a basic implementation. For production, use a proper PDF library like pdf-parse
- */
 async function extractPDFContent(
   buffer: Buffer,
   filename: string,
   mimeType: string
 ): Promise<FileContent> {
   try {
-    // For now, return a placeholder
-    // In production, you'd use a library like pdf-parse or pdfjs-dist
-    // Example with pdf-parse:
-    // const pdf = require('pdf-parse');
-    // const data = await pdf(buffer);
-    // return { filename, mimeType, content: data.text };
-    
     return {
       filename,
       mimeType,
@@ -119,9 +95,6 @@ async function extractPDFContent(
   }
 }
 
-/**
- * Extract content from multiple files
- */
 export async function extractMultipleFileContents(
   fileIds: string[]
 ): Promise<FileContent[]> {
@@ -131,9 +104,6 @@ export async function extractMultipleFileContents(
   return results.filter((result): result is FileContent => result !== null);
 }
 
-/**
- * Format file contents for AI prompt
- */
 export function formatFileContentsForPrompt(
   fileContents: FileContent[],
   userQuery: string

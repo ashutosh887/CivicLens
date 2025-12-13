@@ -2,9 +2,6 @@ import { NextResponse } from "next/server";
 import { getAuthenticatedUser } from "@/lib/db";
 import { checkOumiModelStatus } from "@/lib/oumi/service";
 
-/**
- * API route to check Oumi model status
- */
 export async function GET(req: Request) {
   try {
     const authData = await getAuthenticatedUser();
