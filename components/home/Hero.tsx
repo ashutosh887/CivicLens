@@ -1,3 +1,6 @@
+"use client";
+
+import { useState } from "react";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -18,6 +21,19 @@ interface HeroProps {
 }
 
 export function Hero({ hero }: HeroProps) {
+  const [inputValue, setInputValue] = useState("");
+
+  const handleExampleClick = (example: string) => {
+    setInputValue(example);
+  };
+
+  const getRedirectUrl = () => {
+    if (inputValue.trim()) {
+      return `/chats?q=${encodeURIComponent(inputValue.trim())}`;
+    }
+    return "/chats";
+  };
+
   return (
     <section className="h-screen md:h-auto md:flex-[0.8] flex flex-col items-center justify-center text-center px-4 py-6 md:py-12">
       <div className="w-full max-w-2xl space-y-6 md:space-y-10">
@@ -53,10 +69,12 @@ export function Hero({ hero }: HeroProps) {
         <div className="space-y-5 md:space-y-6">
           <div className="flex flex-col sm:flex-row gap-2 rounded-xl border border-border bg-background p-4 shadow-lg">
             <Input
+              value={inputValue}
+              onChange={(e) => setInputValue(e.target.value)}
               placeholder={hero.searchPlaceholder}
               className="h-10 flex-1 border-border bg-background text-base focus-visible:ring-2 focus-visible:ring-ring"
             />
-            <SignInButton mode="modal" forceRedirectUrl="/chats">
+            <SignInButton mode="modal" forceRedirectUrl={getRedirectUrl()}>
               <Button size="lg" className="h-10 text-base">
                 Sign in to explore
               </Button>
@@ -74,6 +92,7 @@ export function Hero({ hero }: HeroProps) {
                   type="button"
                   variant="outline"
                   size="sm"
+                  onClick={() => handleExampleClick(example)}
                   className={cn(
                     "rounded-full border-dashed",
                     "px-2.5 sm:px-3 py-1 sm:py-1.5 text-[10px] sm:text-[11px]",

@@ -3,8 +3,15 @@ import { ChatEmptyState } from "@/components/app/ChatEmptyState";
 import { prisma } from "@/lib/prisma";
 import { checkDatabaseConnection, getOrCreateUser, getAuthenticatedUser } from "@/lib/db";
 import { redirect } from "next/navigation";
+import { CHAT_CONFIG } from "@/config/chat";
 
-export default async function ChatsPage() {
+interface ChatsPageProps {
+  searchParams: Promise<{ q?: string }>;
+}
+
+export default async function ChatsPage({ searchParams }: ChatsPageProps) {
+  const params = await searchParams;
+  const query = params.q;
   const authData = await getAuthenticatedUser();
   if (!authData) {
     redirect("/");
@@ -87,6 +94,16 @@ export default async function ChatsPage() {
     title: chat.title,
     updatedAt: chat.updatedAt,
   }));
+
+  if (query && query.trim()) {
+    const newChat = await prisma.chat.create({
+      data: {
+        userId: dbUser.id,
+        title: CHAT_CONFIG.defaultChatTitle,
+      },
+    });
+    redirect(`/chats/${newChat.id}?q=${encodeURIComponent(query.trim())}`);
+  }
 
   return (
     <div className="flex h-full">

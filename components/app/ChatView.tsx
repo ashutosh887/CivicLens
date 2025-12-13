@@ -24,9 +24,10 @@ interface ChatViewProps {
   chatId: string;
   initialMessages?: Message[];
   chatTitle?: string;
+  initialQuery?: string;
 }
 
-export function ChatView({ chatId, initialMessages = [], chatTitle }: ChatViewProps) {
+export function ChatView({ chatId, initialMessages = [], chatTitle, initialQuery }: ChatViewProps) {
   const [messages, setMessages] = useState<Message[]>(initialMessages);
   const [streamingMessageId, setStreamingMessageId] = useState<string | null>(null);
   const [attachedFiles, setAttachedFiles] = useState<Array<{ id: string; filename: string; originalName: string; mimeType: string; size: number }>>([]);
@@ -35,6 +36,9 @@ export function ChatView({ chatId, initialMessages = [], chatTitle }: ChatViewPr
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const autoScrollEnabled = useRef(true);
+  const hasSetInitialQuery = useRef(false);
+  const insightsManuallyClosed = useRef(false);
+  const lastMessageCount = useRef(messages.length);
   
   useChatState({ chatId, chatTitle });
 
@@ -50,6 +54,7 @@ export function ChatView({ chatId, initialMessages = [], chatTitle }: ChatViewPr
         const withoutTemp = filtered.filter((m) => !m.id.startsWith("temp-"));
         return [...withoutTemp, assistantMessage];
       });
+      insightsManuallyClosed.current = false;
       autoScrollEnabled.current = true;
       setTimeout(() => {
         scrollToBottom();
@@ -164,6 +169,13 @@ export function ChatView({ chatId, initialMessages = [], chatTitle }: ChatViewPr
     container.addEventListener("scroll", handleScroll);
     return () => container.removeEventListener("scroll", handleScroll);
   }, []);
+
+  useEffect(() => {
+    if (initialQuery && initialQuery.trim() && messages.length === 0 && !hasSetInitialQuery.current) {
+      setMessage(initialQuery.trim());
+      hasSetInitialQuery.current = true;
+    }
+  }, [initialQuery, messages.length, setMessage]);
 
   const handleSend = async () => {
     const trimmedMessage = message.trim();
@@ -297,13 +309,20 @@ export function ChatView({ chatId, initialMessages = [], chatTitle }: ChatViewPr
   const hasInsights = currentQuery && currentQuery.length >= 10;
 
   useEffect(() => {
-    if (hasInsights && !showInsights) {
+    const messageCountChanged = messages.length !== lastMessageCount.current;
+    lastMessageCount.current = messages.length;
+    
+    if (messageCountChanged && messages.length > 0) {
+      insightsManuallyClosed.current = false;
+    }
+    
+    if (hasInsights && !showInsights && !insightsManuallyClosed.current) {
       const timer = setTimeout(() => {
         setShowInsights(true);
       }, 1000);
       return () => clearTimeout(timer);
     }
-  }, [hasInsights, showInsights]);
+  }, [hasInsights, showInsights, messages.length]);
 
   return (
     <div className="flex h-full flex-col relative">
@@ -407,7 +426,10 @@ export function ChatView({ chatId, initialMessages = [], chatTitle }: ChatViewPr
           <InsightsSidebar 
             query={currentQuery} 
             className="w-80 hidden lg:flex"
-            onClose={() => setShowInsights(false)}
+            onClose={() => {
+              setShowInsights(false);
+              insightsManuallyClosed.current = true;
+            }}
           />
         )}
       </div>

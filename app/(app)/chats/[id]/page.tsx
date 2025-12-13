@@ -6,10 +6,13 @@ import { redirect } from "next/navigation";
 
 interface ChatPageProps {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ q?: string }>;
 }
 
-export default async function ChatPage({ params }: ChatPageProps) {
+export default async function ChatPage({ params, searchParams }: ChatPageProps) {
   const { id } = await params;
+  const searchParamsData = await searchParams;
+  const initialQuery = searchParamsData.q;
   const authData = await getAuthenticatedUser();
   if (!authData) {
     redirect("/");
@@ -71,7 +74,7 @@ export default async function ChatPage({ params }: ChatPageProps) {
     },
   }).catch(() => {
     return null;
-  });
+  }) as any;
 
   if (!chat) {
     redirect("/chats");
@@ -91,12 +94,12 @@ export default async function ChatPage({ params }: ChatPageProps) {
     updatedAt: c.updatedAt,
   }));
 
-  const formattedMessages = chat.messages.map((msg) => ({
+  const formattedMessages = (chat.messages || []).map((msg: any) => ({
     id: msg.id,
     role: msg.role as "user" | "assistant",
     content: msg.content,
     createdAt: msg.createdAt,
-    attachments: msg.attachments.length > 0 ? msg.attachments.map((file) => ({
+    attachments: (msg.attachments || []).length > 0 ? (msg.attachments || []).map((file: any) => ({
       id: file.id,
       filename: file.filename,
       originalName: file.originalName,
@@ -109,7 +112,12 @@ export default async function ChatPage({ params }: ChatPageProps) {
     <div className="flex h-full">
       <ChatsSidebar chats={formattedChats} />
       <div className="flex-1 flex flex-col">
-        <ChatView chatId={id} initialMessages={formattedMessages} chatTitle={chat.title} />
+        <ChatView 
+          chatId={id} 
+          initialMessages={formattedMessages} 
+          chatTitle={chat.title}
+          initialQuery={initialQuery}
+        />
       </div>
     </div>
   );

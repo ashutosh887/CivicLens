@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useUser } from "@clerk/nextjs";
@@ -39,11 +39,16 @@ export function ChatsSidebar({ chats }: ChatsSidebarProps) {
   const pathname = usePathname();
   const { user } = useUser();
   const { createChat, updateChat, deleteChat, isLoading } = useChatOperations();
+  const [localChats, setLocalChats] = useState<Chat[]>(chats);
   const [hoveredChat, setHoveredChat] = useState<string | null>(null);
   const [editingChatId, setEditingChatId] = useState<string | null>(null);
   const [editingTitle, setEditingTitle] = useState("");
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [chatToDelete, setChatToDelete] = useState<Chat | null>(null);
+
+  useEffect(() => {
+    setLocalChats(chats);
+  }, [chats]);
 
   const handleNewChat = async () => {
     await createChat();
@@ -84,11 +89,14 @@ export function ChatsSidebar({ chats }: ChatsSidebarProps) {
   const handleDeleteConfirm = async () => {
     if (!chatToDelete) return;
 
+    setLocalChats(prev => prev.filter(chat => chat.id !== chatToDelete.id));
+    setDeleteDialogOpen(false);
+    const chatIdToDelete = chatToDelete.id;
+    setChatToDelete(null);
+
     const result = await deleteChat(chatToDelete);
-    if (result.success) {
-      setDeleteDialogOpen(false);
-      setChatToDelete(null);
-    } else {
+    if (!result.success) {
+      setLocalChats(chats);
       alert(`Failed to delete chat: ${result.error || "Please try again."}`);
     }
   };
@@ -111,7 +119,7 @@ export function ChatsSidebar({ chats }: ChatsSidebarProps) {
       </div>
       
       <div className="flex-1 overflow-y-auto">
-        {chats.length === 0 ? (
+        {localChats.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full text-center px-4">
             <div className="p-4 rounded-full bg-muted/50 mb-3">
               <MessageSquare className="h-6 w-6 text-muted-foreground" />
@@ -127,7 +135,7 @@ export function ChatsSidebar({ chats }: ChatsSidebarProps) {
           <div className="px-3 pt-4 pb-2">
             <h3 className="text-[10px] font-medium text-muted-foreground mb-3 px-2 uppercase tracking-wider">Your chats</h3>
             <div className="space-y-1">
-            {chats.map((chat) => {
+            {localChats.map((chat) => {
               const isActive = pathname === `/chats/${chat.id}`;
               const isHovered = hoveredChat === chat.id;
               return (

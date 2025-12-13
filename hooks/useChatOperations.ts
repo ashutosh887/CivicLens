@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useRouter, usePathname } from "next/navigation";
+import { useRouter, usePathname, useSearchParams } from "next/navigation";
 
 interface Chat {
   id: string;
@@ -10,6 +10,7 @@ interface Chat {
 export function useChatOperations() {
   const router = useRouter();
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const [isCreating, setIsCreating] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -23,7 +24,11 @@ export function useChatOperations() {
 
       if (response.ok) {
         const data = await response.json();
-        router.push(`/chats/${data.chat.id}`);
+        const query = searchParams.get("q");
+        const url = query 
+          ? `/chats/${data.chat.id}?q=${encodeURIComponent(query)}`
+          : `/chats/${data.chat.id}`;
+        router.push(url);
         router.refresh();
         return { success: true, chatId: data.chat.id };
       }
@@ -81,7 +86,6 @@ export function useChatOperations() {
           router.push("/chats");
         }
         
-        router.refresh();
         return { success: true };
       }
 
