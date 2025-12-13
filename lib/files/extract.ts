@@ -79,11 +79,8 @@ async function extractPDFContent(
   mimeType: string
 ): Promise<FileContent> {
   try {
-    // Try to use pdf-parse if available, otherwise provide helpful message
     let pdfText = "";
     try {
-      // Dynamic import to avoid breaking if pdf-parse is not installed
-      // Using Function constructor to prevent TypeScript from checking the import at compile time
       const dynamicImport = new Function('specifier', 'return import(specifier)');
       const pdfParseModule = await dynamicImport('pdf-parse').catch(() => null);
       if (pdfParseModule && pdfParseModule.default) {
@@ -91,7 +88,7 @@ async function extractPDFContent(
         pdfText = pdfData.text;
       }
     } catch (importError) {
-      // pdf-parse not available, will use fallback
+      // pdf-parse not available
     }
 
     if (pdfText && pdfText.trim().length > 0) {
@@ -102,17 +99,14 @@ async function extractPDFContent(
       };
     }
 
-    // Fallback: Try to extract text from buffer (basic approach)
-    // Some PDFs have text that can be extracted with basic string operations
     const bufferString = buffer.toString("utf-8", 0, Math.min(buffer.length, 100000));
     const textMatches = bufferString.match(/\(([^)]+)\)/g);
     if (textMatches && textMatches.length > 10) {
-      // Likely has extractable text
       const extractedText = textMatches
         .map(m => m.slice(1, -1))
         .filter(t => t.length > 2 && !t.match(/^[\d\s]+$/))
         .join(" ")
-        .substring(0, 5000); // Limit to 5000 chars
+        .substring(0, 5000);
       
       if (extractedText.length > 50) {
         return {
@@ -164,14 +158,11 @@ export function formatFileContentsForPrompt(
       prompt += `\n--- File ${index + 1}: ${file.filename} (${file.mimeType}) ---\n`;
       
       if (file.error && (!file.content || file.content.trim().length === 0)) {
-        // Only show error if there's no content
         prompt += `[Note: ${file.error}]\n`;
         prompt += `The user has attached this file but automatic extraction is limited. Please acknowledge the file and ask the user to provide the text content or describe what they need help with regarding this file.\n`;
       } else if (file.content && file.content.trim().length > 0) {
-        // Show the actual content
         prompt += file.content;
         if (file.error) {
-          // If there's both content and an error, mention it's partial
           prompt += `\n[Note: ${file.error}]\n`;
         }
       } else {
