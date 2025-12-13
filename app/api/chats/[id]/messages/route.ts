@@ -111,6 +111,29 @@ export async function POST(req: Request, { params }: RouteParams) {
           let fullContent = "";
 
           try {
+            // Send user message info first so frontend can update temp message
+            controller.enqueue(
+              encoder.encode(`data: ${JSON.stringify({ 
+                type: 'userMessage',
+                userMessage: {
+                  id: userMessage.id,
+                  role: userMessage.role,
+                  content: userMessage.content,
+                  createdAt: userMessage.createdAt.toISOString(),
+                  attachments: fileIds && fileIds.length > 0 ? await prisma.file.findMany({
+                    where: { id: { in: fileIds } },
+                    select: {
+                      id: true,
+                      filename: true,
+                      originalName: true,
+                      mimeType: true,
+                      size: true,
+                    },
+                  }) : undefined,
+                }
+              })}\n\n`)
+            );
+
             const assistantMessage = await prisma.message.create({
               data: {
                 chatId: chat.id,
@@ -122,7 +145,11 @@ export async function POST(req: Request, { params }: RouteParams) {
             for await (const chunk of getChatStream(enhancedContent, conversationHistory)) {
               fullContent += chunk;
               controller.enqueue(
-                encoder.encode(`data: ${JSON.stringify({ chunk, messageId: assistantMessage.id })}\n\n`)
+                encoder.encode(`data: ${JSON.stringify({ 
+                  type: 'chunk',
+                  chunk, 
+                  messageId: assistantMessage.id 
+                })}\n\n`)
               );
             }
 
