@@ -79,11 +79,49 @@ async function extractPDFContent(
   mimeType: string
 ): Promise<FileContent> {
   try {
+    let pdfText = "";
+    try {
+      const dynamicImport = new Function('specifier', 'return import(specifier)');
+      const pdfParseModule = await dynamicImport('pdf-parse').catch(() => null);
+      if (pdfParseModule && pdfParseModule.default) {
+        const pdfData = await pdfParseModule.default(buffer);
+        pdfText = pdfData.text;
+      }
+    } catch (importError) {
+      // pdf-parse not available
+    }
+
+    if (pdfText && pdfText.trim().length > 0) {
+      return {
+        filename,
+        mimeType,
+        content: pdfText,
+      };
+    }
+
+    const bufferString = buffer.toString("utf-8", 0, Math.min(buffer.length, 100000));
+    const textMatches = bufferString.match(/\(([^)]+)\)/g);
+    if (textMatches && textMatches.length > 10) {
+      const extractedText = textMatches
+        .map(m => m.slice(1, -1))
+        .filter(t => t.length > 2 && !t.match(/^[\d\s]+$/))
+        .join(" ")
+        .substring(0, 5000);
+      
+      if (extractedText.length > 50) {
+        return {
+          filename,
+          mimeType,
+          content: extractedText + "\n\n[Note: This is a partial extraction. For full content, please ensure the PDF has selectable text.]",
+        };
+      }
+    }
+
     return {
       filename,
       mimeType,
-      content: `[PDF Document: ${filename}]\n\nNote: PDF text extraction is not fully implemented. Please provide the text content or use a PDF with selectable text.`,
-      error: "PDF extraction requires additional library. For now, please copy and paste the text content.",
+      content: `[PDF Document: ${filename}]\n\nThe PDF file has been received. However, automatic text extraction from this PDF is limited. If you have questions about the document, please:\n1. Copy and paste the relevant text from the PDF\n2. Or describe what you need help with regarding this document\n\nI can help you understand, analyze, or answer questions about the content once you provide the text.`,
+      error: "PDF text extraction is limited. Please provide the text content or describe what you need help with.",
     };
   } catch (error: any) {
     return {
@@ -115,17 +153,25 @@ export function formatFileContentsForPrompt(
   let prompt = userQuery || "Please analyze the attached file(s).";
 
   if (fileContents.length > 0) {
-    prompt += "\n\nAttached files:\n";
+    prompt += "\n\n=== ATTACHED FILES ===\n";
     fileContents.forEach((file, index) => {
-      prompt += `\n--- File ${index + 1}: ${file.filename} ---\n`;
-      if (file.error) {
+      prompt += `\n--- File ${index + 1}: ${file.filename} (${file.mimeType}) ---\n`;
+      
+      if (file.error && (!file.content || file.content.trim().length === 0)) {
         prompt += `[Note: ${file.error}]\n`;
-      }
-      if (file.content) {
+        prompt += `The user has attached this file but automatic extraction is limited. Please acknowledge the file and ask the user to provide the text content or describe what they need help with regarding this file.\n`;
+      } else if (file.content && file.content.trim().length > 0) {
         prompt += file.content;
+        if (file.error) {
+          prompt += `\n[Note: ${file.error}]\n`;
+        }
+      } else {
+        prompt += `[File received but content could not be extracted]\n`;
       }
       prompt += "\n";
     });
+    prompt += "\n=== END OF ATTACHED FILES ===\n\n";
+    prompt += "Please analyze the file(s) above and respond to the user's query. If the file content is not fully extracted, acknowledge the file and ask for clarification or the text content.";
   }
 
   return prompt;

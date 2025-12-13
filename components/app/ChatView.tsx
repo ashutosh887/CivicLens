@@ -56,6 +56,28 @@ export function ChatView({ chatId, initialMessages = [], chatTitle }: ChatViewPr
       }, 100);
     },
     onStreamChunk: (chunk: string, messageId: string) => {
+      // Handle user message update from server
+      if (chunk.startsWith("__USER_MESSAGE_UPDATE__")) {
+        try {
+          const userMessageData = JSON.parse(chunk.replace("__USER_MESSAGE_UPDATE__", ""));
+          setMessages((prev) => {
+            // Replace temp user message with real one from server
+            const filtered = prev.filter((m) => !m.id.startsWith("temp-"));
+            const newMessage = {
+              id: userMessageData.id,
+              role: userMessageData.role,
+              content: userMessageData.content,
+              createdAt: new Date(userMessageData.createdAt),
+              attachments: userMessageData.attachments || (attachedFiles.length > 0 ? attachedFiles : undefined),
+            };
+            return [...filtered, newMessage];
+          });
+        } catch (e) {
+          console.error("Error parsing user message update:", e);
+        }
+        return;
+      }
+
       setStreamingMessageId(messageId);
       setMessages((prev) => {
         const existingIndex = prev.findIndex((m) => m.id === messageId);
