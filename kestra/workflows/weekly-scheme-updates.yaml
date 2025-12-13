@@ -3,7 +3,6 @@ namespace: civiclens
 description: Weekly automated workflow to crawl government portals and update scheme information for multiple countries
 
 tasks:
-  # Parallel fetch from multiple countries
   - id: fetch-feeds-parallel
     type: io.kestra.core.tasks.flows.Parallel
     tasks:
@@ -51,7 +50,6 @@ tasks:
         timeout: PT30S
         store: true
 
-  # Parse feeds with error handling
   - id: parse-all-feeds
     type: io.kestra.core.tasks.scripts.Node
     description: Parse RSS/Atom feeds from all countries and extract scheme updates
@@ -71,7 +69,6 @@ tasks:
         canada: []
       };
       
-      // Parse India feeds
       try {
         const indiaResponse = {{ outputs.fetch-feeds-parallel.tasks.fetch-india-feeds.body }};
         if (indiaResponse) {
@@ -90,7 +87,6 @@ tasks:
         console.error('Error parsing India feeds:', e.message);
       }
       
-      // Parse USA feeds
       try {
         const usaResponse = {{ outputs.fetch-feeds-parallel.tasks.fetch-us-feeds.body }};
         if (usaResponse) {
@@ -109,7 +105,6 @@ tasks:
         console.error('Error parsing USA feeds:', e.message);
       }
       
-      // Parse UK feeds
       try {
         const ukResponse = {{ outputs.fetch-feeds-parallel.tasks.fetch-uk-feeds.body }};
         if (ukResponse) {
@@ -128,7 +123,6 @@ tasks:
         console.error('Error parsing UK feeds:', e.message);
       }
       
-      // Parse Canada feeds
       try {
         const canadaResponse = {{ outputs.fetch-feeds-parallel.tasks.fetch-canada-feeds.body }};
         if (canadaResponse) {
@@ -149,7 +143,6 @@ tasks:
       
       return allSchemes;
 
-  # Summarize with AI
   - id: summarize-changes
     type: io.kestra.plugin.openai.ChatCompletion
     description: Use AI to summarize scheme changes and updates for all countries
@@ -169,7 +162,6 @@ tasks:
           {{ outputs.parse-all-feeds.value | json }}
     store: true
 
-  # Store updates using internal storage (best practice for large data)
   - id: store-updates
     type: io.kestra.core.tasks.storages.LocalFiles
     description: Store summarized updates for all countries
@@ -191,7 +183,7 @@ tasks:
 triggers:
   - id: weekly-schedule
     type: io.kestra.core.models.triggers.types.Schedule
-    cron: "0 9 * * 1"  # Every Monday at 9 AM IST
+    cron: "0 9 * * 1"
     timezone: Asia/Kolkata
     inputs:
       enabled: true

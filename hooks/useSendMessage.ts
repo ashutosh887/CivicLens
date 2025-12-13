@@ -103,7 +103,6 @@ export function useSendMessage({
               try {
                 const parsed = JSON.parse(data);
                 
-                // Handle user message update from server
                 if (parsed.type === 'userMessage' && parsed.userMessage) {
                   savedUserMessage = {
                     id: parsed.userMessage.id,
@@ -111,14 +110,11 @@ export function useSendMessage({
                     content: parsed.userMessage.content,
                     createdAt: new Date(parsed.userMessage.createdAt),
                   };
-                  // Call a callback to update the user message in the UI
                   if (onStreamChunk) {
-                    // Use a special marker to indicate this is a user message update
                     onStreamChunk?.(`__USER_MESSAGE_UPDATE__${JSON.stringify(savedUserMessage)}`, "");
                   }
                 }
                 
-                // Handle streaming chunks
                 if (parsed.type === 'chunk' && parsed.chunk) {
                   fullContent += parsed.chunk;
                   if (parsed.messageId) {
@@ -127,7 +123,6 @@ export function useSendMessage({
                   onStreamChunk?.(parsed.chunk, parsed.messageId || "");
                 }
               } catch (e) {
-                // Ignore parse errors
               }
             }
           }

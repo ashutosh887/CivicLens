@@ -62,7 +62,6 @@ export function ChatView({ chatId, initialMessages = [], chatTitle, initialQuery
       }, 100);
     },
     onStreamChunk: (chunk: string, messageId: string) => {
-      // Handle user message update from server
       if (chunk.startsWith("__USER_MESSAGE_UPDATE__")) {
         try {
           const userMessageData = JSON.parse(chunk.replace("__USER_MESSAGE_UPDATE__", ""));

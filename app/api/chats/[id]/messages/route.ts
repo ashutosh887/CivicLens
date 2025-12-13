@@ -62,7 +62,6 @@ export async function POST(req: Request, { params }: RouteParams) {
         const fileContents = await extractMultipleFileContents(fileIds);
         enhancedContent = formatFileContentsForPrompt(fileContents, content || "");
       } catch (error) {
-        // Continue without file content if extraction fails
       }
     }
     const userMessage = await prisma.message.create({
@@ -111,7 +110,6 @@ export async function POST(req: Request, { params }: RouteParams) {
           let fullContent = "";
 
           try {
-            // Send user message info first so frontend can update temp message
             controller.enqueue(
               encoder.encode(`data: ${JSON.stringify({ 
                 type: 'userMessage',

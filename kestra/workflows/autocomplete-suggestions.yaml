@@ -17,7 +17,6 @@ tasks:
     script: |
       const userInput = {{ inputs.user_query | json }};
       
-      // Extract age, location, income hints from user input
       const ageMatch = userInput.match(/(\d+)\s*(?:years?|yrs?|age)/i);
       const locationMatch = userInput.match(/(?:in|from|at)\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+)*)/i);
       const incomeMatch = userInput.match(/(?:income|salary|earn|make)\s+(?:of|is)?\s*\$?(\d+(?:,\d+)*(?:k|K|thousand|million)?)/i);
@@ -50,12 +49,10 @@ tasks:
         return [];
       }
       
-      // Simple matching algorithm
       const matches = schemes
         .map(scheme => {
           let score = 0;
           
-          // Keyword matching
           if (scheme.title && userProfile.keywords) {
             const titleLower = scheme.title.toLowerCase();
             userProfile.keywords.forEach(keyword => {
@@ -65,7 +62,6 @@ tasks:
             });
           }
           
-          // Age matching
           if (userProfile.age && scheme.eligibility) {
             if (scheme.eligibility.age_requirements) {
               const ageReq = scheme.eligibility.age_requirements;
@@ -75,7 +71,6 @@ tasks:
             }
           }
           
-          // Location matching
           if (userProfile.location && scheme.country) {
             if (scheme.country.toLowerCase().includes(userProfile.location.toLowerCase())) {
               score += 3;

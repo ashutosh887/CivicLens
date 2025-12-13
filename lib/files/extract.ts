@@ -145,7 +145,6 @@ async function extractPDFContent(
       };
     }
 
-    // Fallback: try to extract text from PDF structure
     const bufferString = buffer.toString("utf-8", 0, Math.min(buffer.length, 100000));
     const textMatches = bufferString.match(/\(([^)]+)\)/g);
     if (textMatches && textMatches.length > 10) {

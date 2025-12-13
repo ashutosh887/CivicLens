@@ -79,14 +79,11 @@ tasks:
     script: |
       const extracted = {{ outputs.extract-rules.choices[0].message.content }};
       
-      // Try to parse JSON from response
       let parsed;
       try {
-        // Remove markdown code blocks if present
         const cleaned = extracted.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
         parsed = JSON.parse(cleaned);
       } catch (e) {
-        // Try to extract JSON object from text
         const jsonMatch = extracted.match(/\{[\s\S]*\}/);
         if (jsonMatch) {
           parsed = JSON.parse(jsonMatch[0]);
@@ -95,7 +92,6 @@ tasks:
         }
       }
       
-      // Validate and structure the JSON
       const structured = {
         scheme_name: {{ inputs.scheme_name | json }},
         country: {{ inputs.country | default("Unknown") | json }},

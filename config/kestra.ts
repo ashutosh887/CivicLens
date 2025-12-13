@@ -19,3 +19,4 @@ export const KESTRA_CONFIG = {
     return !!this.url && this.url !== "http://localhost:8080" || process.env.NODE_ENV === "development";
   },
 } as const;
+
