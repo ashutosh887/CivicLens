@@ -1,9 +1,20 @@
 import OpenAI from "openai";
 import { AI_CONFIG } from "@/config/ai";
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+// Lazy initialization to avoid build-time errors
+let openai: OpenAI | null = null;
+
+function getOpenAIClient(): OpenAI {
+  if (!openai) {
+    if (!process.env.OPENAI_API_KEY) {
+      throw new Error("OPENAI_API_KEY is not configured");
+    }
+    openai = new OpenAI({
+      apiKey: process.env.OPENAI_API_KEY,
+    });
+  }
+  return openai;
+}
 
 export interface AIMessage {
   role: "system" | "user" | "assistant";
@@ -25,7 +36,8 @@ export async function openAIChatCompletion(
     throw new Error("OPENAI_API_KEY is not configured");
   }
 
-  const response = await openai.chat.completions.create({
+  const client = getOpenAIClient();
+  const response = await client.chat.completions.create({
     model: options.model || AI_CONFIG.openai.defaultModel,
     messages: options.messages.map((m) => ({
       role: m.role,
@@ -46,7 +58,8 @@ export async function* openAIChatStream(
     throw new Error("OPENAI_API_KEY is not configured");
   }
 
-  const stream = await openai.chat.completions.create({
+  const client = getOpenAIClient();
+  const stream = await client.chat.completions.create({
     model: options.model || AI_CONFIG.openai.defaultModel,
     messages: options.messages.map((m) => ({
       role: m.role,
