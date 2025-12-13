@@ -1,9 +1,7 @@
 # **CivicLens**
-**Bringing clarity to public services for everyone, globally. 🔎**
+**Bringing clarity to public services for everyone. 🔎**
 
 CivicLens is a Next.js-powered platform that helps users understand government schemes, public services, and civic information through natural language questions. It simplifies access to civic knowledge using AI-driven explanations, intuitive UI, and structured insights.
-
-**Supports:** India, United States, United Kingdom, Canada, Australia, and more.
 
 ---
 
