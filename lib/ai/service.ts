@@ -7,11 +7,30 @@ import {
   DOCUMENT_PROMPT_TEMPLATES,
 } from "./prompts";
 import { AI_CONFIG } from "@/config/ai";
+import { queryOumiModel } from "@/lib/oumi/service";
+import { OUMI_CONFIG } from "@/config/oumi";
 
 export async function getChatCompletion(
   userQuery: string,
-  conversationHistory: Array<{ role: "user" | "assistant"; content: string }> = []
+  conversationHistory: Array<{ role: "user" | "assistant"; content: string }> = [],
+  useFineTuned: boolean = false
 ): Promise<string> {
+  // Try Oumi fine-tuned model if enabled and requested
+  if ((useFineTuned || OUMI_CONFIG.enabled) && OUMI_CONFIG.isModelAvailable()) {
+    try {
+      const result = await queryOumiModel({
+        query: userQuery,
+        conversationHistory,
+        useFineTuned: useFineTuned || OUMI_CONFIG.enabled,
+      });
+      return result.response;
+    } catch (error) {
+      console.error("Oumi model error, falling back to OpenAI:", error);
+      // Fall through to OpenAI
+    }
+  }
+
+  // Default to OpenAI
   const messages = getChatMessages(userQuery, conversationHistory);
 
   try {
@@ -24,15 +43,39 @@ export async function getChatCompletion(
 
 export async function* getChatStream(
   userQuery: string,
-  conversationHistory: Array<{ role: "user" | "assistant"; content: string }> = []
+  conversationHistory: Array<{ role: "user" | "assistant"; content: string }> = [],
+  useFineTuned: boolean = false
 ): AsyncGenerator<string, void, unknown> {
+  // Try Oumi fine-tuned model if enabled and requested
+  // Note: Oumi might not support streaming, so we'll use non-streaming and simulate stream
+  if ((useFineTuned || OUMI_CONFIG.enabled) && OUMI_CONFIG.isModelAvailable()) {
+    try {
+      const result = await queryOumiModel({
+        query: userQuery,
+        conversationHistory,
+        useFineTuned: useFineTuned || OUMI_CONFIG.enabled,
+      });
+      
+      // Simulate streaming by yielding characters
+      for (const char of result.response) {
+        yield char;
+        await new Promise((resolve) => setTimeout(resolve, 10));
+      }
+      return;
+    } catch (error) {
+      console.error("Oumi model error, falling back to OpenAI:", error);
+      // Fall through to OpenAI
+    }
+  }
+
+  // Default to OpenAI streaming
   const messages = getChatMessages(userQuery, conversationHistory);
 
   try {
     yield* openAIChatStream({ messages });
   } catch (error) {
     console.error("OpenAI streaming error:", error);
-    const response = await getChatCompletion(userQuery, conversationHistory);
+    const response = await getChatCompletion(userQuery, conversationHistory, useFineTuned);
     for (const char of response) {
       yield char;
       await new Promise((resolve) => setTimeout(resolve, 10));

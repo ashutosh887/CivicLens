@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { getAuthenticatedUser } from "@/lib/db";
 import axios from "axios";
 
@@ -7,8 +7,8 @@ import axios from "axios";
  * Useful for polling long-running workflows
  */
 export async function GET(
-  req: Request,
-  { params }: { params: { executionId: string } }
+  request: NextRequest,
+  context: { params: Promise<{ executionId: string }> }
 ) {
   try {
     const authData = await getAuthenticatedUser();
@@ -16,7 +16,7 @@ export async function GET(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { executionId } = params;
+    const { executionId } = await context.params;
 
     if (!executionId) {
       return NextResponse.json(

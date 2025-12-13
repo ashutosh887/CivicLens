@@ -87,6 +87,7 @@ export async function POST(req: Request) {
 
       return new Response("User synced", { status: 200 });
     } catch (error) {
+      console.error("Error syncing user:", error);
       return new Response("Error syncing user", { status: 500 });
     }
   }
@@ -101,6 +102,7 @@ export async function POST(req: Request) {
 
       return new Response("User deleted", { status: 200 });
     } catch (error) {
+      console.error("Error deleting user:", error);
       return new Response("Error deleting user", { status: 500 });
     }
   }
