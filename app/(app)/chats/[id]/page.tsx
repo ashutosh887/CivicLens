@@ -56,6 +56,17 @@ export default async function ChatPage({ params }: ChatPageProps) {
     include: {
       messages: {
         orderBy: { createdAt: "asc" },
+        include: {
+          attachments: {
+            select: {
+              id: true,
+              filename: true,
+              originalName: true,
+              mimeType: true,
+              size: true,
+            },
+          },
+        },
       },
     },
   }).catch(() => {
@@ -85,6 +96,13 @@ export default async function ChatPage({ params }: ChatPageProps) {
     role: msg.role as "user" | "assistant",
     content: msg.content,
     createdAt: msg.createdAt,
+    attachments: msg.attachments.length > 0 ? msg.attachments.map((file) => ({
+      id: file.id,
+      filename: file.filename,
+      originalName: file.originalName,
+      mimeType: file.mimeType,
+      size: file.size,
+    })) : undefined,
   }));
 
   return (

@@ -4,6 +4,7 @@ import { NextResponse } from "next/server";
 import { getChatStream } from "@/lib/ai/service";
 import { generateChatTitle } from "@/lib/ai/title";
 import { CHAT_CONFIG } from "@/config/chat";
+import { extractMultipleFileContents, formatFileContentsForPrompt } from "@/lib/files/extract";
 
 interface RouteParams {
   params: Promise<{ id: string }>;
@@ -48,18 +49,33 @@ export async function POST(req: Request, { params }: RouteParams) {
 
     const { content, stream, fileIds } = await req.json();
 
-    if (!content || typeof content !== "string") {
+    // Allow messages with only files (no text content)
+    if (!content && (!fileIds || fileIds.length === 0)) {
       return NextResponse.json(
-        { error: "Content is required" },
+        { error: "Content or file attachments are required" },
         { status: 400 }
       );
     }
 
+    // Extract file contents if files are attached
+    let enhancedContent = content || "";
+    if (fileIds && Array.isArray(fileIds) && fileIds.length > 0) {
+      try {
+        const fileContents = await extractMultipleFileContents(fileIds);
+        enhancedContent = formatFileContentsForPrompt(fileContents, content || "");
+      } catch (error) {
+        console.error("Error extracting file contents:", error);
+        // Continue with original content if extraction fails
+      }
+    }
+
+    // Store the original content (without file contents) in the message
+    // File contents are included in the AI prompt but not stored in DB
     const userMessage = await prisma.message.create({
       data: {
         chatId: chat.id,
         role: "user",
-        content,
+        content: content || (fileIds && fileIds.length > 0 ? `[Attached ${fileIds.length} file(s)]` : ""),
       },
     });
 
@@ -76,7 +92,8 @@ export async function POST(req: Request, { params }: RouteParams) {
     }
 
     if (chat.title === CHAT_CONFIG.defaultChatTitle) {
-      const title = generateChatTitle(content);
+      const titleText = content || (fileIds && fileIds.length > 0 ? `Files: ${fileIds.length}` : "");
+      const title = generateChatTitle(titleText);
       await prisma.chat.update({
         where: { id: chat.id },
         data: { title },
@@ -108,7 +125,7 @@ export async function POST(req: Request, { params }: RouteParams) {
               },
             });
 
-            for await (const chunk of getChatStream(content, conversationHistory)) {
+            for await (const chunk of getChatStream(enhancedContent, conversationHistory)) {
               fullContent += chunk;
               controller.enqueue(
                 encoder.encode(`data: ${JSON.stringify({ chunk, messageId: assistantMessage.id })}\n\n`)
@@ -139,7 +156,7 @@ export async function POST(req: Request, { params }: RouteParams) {
     }
 
     let fullContent = "";
-    for await (const chunk of getChatStream(content, conversationHistory)) {
+    for await (const chunk of getChatStream(enhancedContent, conversationHistory)) {
       fullContent += chunk;
     }
 

@@ -17,6 +17,7 @@ interface Message {
   role: "user" | "assistant";
   content: string;
   createdAt: Date;
+  attachments?: Array<{ id: string; filename: string; originalName: string; mimeType: string; size: number }>;
 }
 
 interface ChatViewProps {
@@ -42,8 +43,14 @@ export function ChatView({ chatId, initialMessages = [], chatTitle }: ChatViewPr
       setMessages((prev) => {
         // Remove any temporary streaming message and ensure we don't duplicate
         const filtered = prev.filter((m) => m.id !== streamingMessageId && m.id !== assistantMessage.id);
-        return [...filtered, assistantMessage];
+        // Also remove any temp user messages that might have been added
+        const withoutTemp = filtered.filter((m) => !m.id.startsWith("temp-"));
+        return [...withoutTemp, assistantMessage];
       });
+      // Focus input after message is sent
+      setTimeout(() => {
+        inputRef.current?.focus();
+      }, 100);
     },
     onStreamChunk: (chunk: string, messageId: string) => {
       setStreamingMessageId(messageId);
@@ -92,11 +99,13 @@ export function ChatView({ chatId, initialMessages = [], chatTitle }: ChatViewPr
     const userMessage: Message = {
       id: `temp-${Date.now()}`,
       role: "user",
-      content: trimmedMessage || `Uploaded ${attachedFiles.length} file(s)`,
+      content: trimmedMessage || (attachedFiles.length > 0 ? `[Attached ${attachedFiles.length} file(s)]` : ""),
       createdAt: new Date(),
+      attachments: attachedFiles.length > 0 ? [...attachedFiles] : undefined,
     };
     
     setMessages((prev) => [...prev, userMessage]);
+    setMessage(""); // Clear message input
     await sendMessage();
   };
 
@@ -174,7 +183,25 @@ export function ChatView({ chatId, initialMessages = [], chatTitle }: ChatViewPr
                 : "bg-muted/80 text-foreground border border-border/50 rounded-bl-md"
             )}
           >
-            <MessageContent content={msg.content} isUser={msg.role === "user"} />
+            {msg.attachments && msg.attachments.length > 0 && (
+              <div className="mb-2 flex flex-wrap gap-2">
+                {msg.attachments.map((file) => (
+                  <Badge
+                    key={file.id}
+                    variant="secondary"
+                    className="text-xs flex items-center gap-1.5"
+                  >
+                    <span className="text-base">
+                      {file.mimeType.startsWith("image/") ? "🖼️" : 
+                       file.mimeType === "application/pdf" ? "📄" : 
+                       file.mimeType.includes("word") || file.mimeType.includes("document") ? "📝" : "📎"}
+                    </span>
+                    <span className="font-medium truncate max-w-[120px]">{file.originalName}</span>
+                  </Badge>
+                ))}
+              </div>
+            )}
+            {msg.content && <MessageContent content={msg.content} isUser={msg.role === "user"} />}
           </div>
         </div>
       ))}
