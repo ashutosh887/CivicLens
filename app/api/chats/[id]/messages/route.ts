@@ -49,7 +49,6 @@ export async function POST(req: Request, { params }: RouteParams) {
 
     const { content, stream, fileIds } = await req.json();
 
-    // Allow messages with only files (no text content)
     if (!content && (!fileIds || fileIds.length === 0)) {
       return NextResponse.json(
         { error: "Content or file attachments are required" },
@@ -57,7 +56,6 @@ export async function POST(req: Request, { params }: RouteParams) {
       );
     }
 
-    // Extract file contents if files are attached
     let enhancedContent = content || "";
     if (fileIds && Array.isArray(fileIds) && fileIds.length > 0) {
       try {
@@ -65,12 +63,8 @@ export async function POST(req: Request, { params }: RouteParams) {
         enhancedContent = formatFileContentsForPrompt(fileContents, content || "");
       } catch (error) {
         console.error("Error extracting file contents:", error);
-        // Continue with original content if extraction fails
       }
     }
-
-    // Store the original content (without file contents) in the message
-    // File contents are included in the AI prompt but not stored in DB
     const userMessage = await prisma.message.create({
       data: {
         chatId: chat.id,

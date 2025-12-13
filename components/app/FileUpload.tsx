@@ -51,7 +51,6 @@ export function FileUpload({ onFilesChange, disabled }: FileUploadProps) {
 
       onFilesChange(newFiles);
       
-      // Focus input after successful upload
       setTimeout(() => {
         const input = document.querySelector('input[type="text"]') as HTMLInputElement;
         input?.focus();

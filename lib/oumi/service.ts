@@ -1,10 +1,3 @@
-/**
- * Oumi Service
- * 
- * Service for interacting with Oumi fine-tuned models.
- * Handles model queries, training status, and fallback to OpenAI.
- */
-
 import { OUMI_CONFIG } from "@/config/oumi";
 import { openAIChatCompletion } from "@/lib/ai/openai";
 import type { AIMessage } from "@/lib/ai/openai";
@@ -12,7 +5,7 @@ import type { AIMessage } from "@/lib/ai/openai";
 export interface OumiQueryRequest {
   query: string;
   conversationHistory?: Array<{ role: "user" | "assistant"; content: string }>;
-  useFineTuned?: boolean; // Force use of fine-tuned model
+  useFineTuned?: boolean;
 }
 
 export interface OumiQueryResponse {
@@ -21,16 +14,11 @@ export interface OumiQueryResponse {
   timestamp: Date;
 }
 
-/**
- * Query the Oumi fine-tuned model
- * Falls back to OpenAI if Oumi is not available
- */
 export async function queryOumiModel(
   request: OumiQueryRequest
 ): Promise<OumiQueryResponse> {
   const { query, conversationHistory = [], useFineTuned = false } = request;
 
-  // Check if we should use Oumi
   const shouldUseOumi = useFineTuned || OUMI_CONFIG.isModelAvailable();
 
   if (shouldUseOumi && OUMI_CONFIG.modelUrl) {
@@ -43,11 +31,9 @@ export async function queryOumiModel(
       };
     } catch (error) {
       console.error("Oumi model query failed, falling back to OpenAI:", error);
-      // Fall through to OpenAI fallback
     }
   }
 
-  // Fallback to OpenAI
   const messages: AIMessage[] = [
     {
       role: "system",
@@ -72,9 +58,6 @@ export async function queryOumiModel(
   };
 }
 
-/**
- * Query Oumi API endpoint
- */
 async function queryOumiAPI(
   query: string,
   conversationHistory: Array<{ role: "user" | "assistant"; content: string }>
@@ -111,9 +94,6 @@ async function queryOumiAPI(
   return data.response || data.message || data.text || "";
 }
 
-/**
- * Check if Oumi model is available
- */
 export async function checkOumiModelStatus(): Promise<{
   available: boolean;
   modelUrl?: string;

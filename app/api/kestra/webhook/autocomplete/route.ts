@@ -2,10 +2,6 @@ import { NextResponse } from "next/server";
 import { getAuthenticatedUser } from "@/lib/db";
 import axios from "axios";
 
-/**
- * API route to trigger Kestra autocomplete suggestions workflow via webhook
- * This route acts as a secure proxy between your Next.js app and Kestra
- */
 export async function POST(req: Request) {
   try {
     const authData = await getAuthenticatedUser();
@@ -28,24 +24,21 @@ export async function POST(req: Request) {
     const workflowId = "autocomplete-suggestions";
     const webhookKey = "autocomplete-suggestions-key";
 
-    // Construct webhook URL
     const webhookUrl = `${kestraUrl}/api/v1/executions/webhook/${namespace}/${workflowId}/${webhookKey}`;
 
-    // Send POST request to Kestra webhook
     const kestraResponse = await axios.post(
       webhookUrl,
       {
         user_query,
       },
       {
-        timeout: 30000, // 30 second timeout
+        timeout: 30000,
         headers: {
           "Content-Type": "application/json",
         },
       }
     );
 
-    // The webhook is configured to return the output value directly
     const suggestions = kestraResponse.data.value;
     const executionId = kestraResponse.data.id;
 

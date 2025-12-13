@@ -2,10 +2,6 @@ import { NextResponse } from "next/server";
 import { getAuthenticatedUser } from "@/lib/db";
 import { queryOumiModel } from "@/lib/oumi/service";
 
-/**
- * API route to query the Oumi fine-tuned model
- * Falls back to OpenAI if Oumi is not available
- */
 export async function POST(req: Request) {
   try {
     const authData = await getAuthenticatedUser();

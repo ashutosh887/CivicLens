@@ -2,10 +2,6 @@ import { NextRequest, NextResponse } from "next/server";
 import { getAuthenticatedUser } from "@/lib/db";
 import axios from "axios";
 
-/**
- * API route to check the status of a Kestra execution
- * Useful for polling long-running workflows
- */
 export async function GET(
   request: NextRequest,
   context: { params: Promise<{ executionId: string }> }
@@ -35,7 +31,6 @@ export async function GET(
       );
     }
 
-    // Fetch execution status from Kestra API
     const response = await axios.get(
       `${kestraUrl}/api/v1/executions/${executionId}`,
       {

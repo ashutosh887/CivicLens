@@ -2,16 +2,6 @@ import { NextResponse } from "next/server";
 import { getAuthenticatedUser } from "@/lib/db";
 import { OUMI_CONFIG } from "@/config/oumi";
 
-/**
- * API route to trigger Oumi model training
- * 
- * Note: This endpoint provides instructions for training.
- * Actual training should be done via command line or a separate service
- * as it requires Python environment and can take 30-60 minutes.
- * 
- * For production, consider using a job queue (Bull, BullMQ) or
- * a separate training service.
- */
 export async function POST(req: Request) {
   try {
     const authData = await getAuthenticatedUser();
@@ -22,7 +12,6 @@ export async function POST(req: Request) {
     const { configPath } = await req.json().catch(() => ({}));
     const configFile = configPath || OUMI_CONFIG.configPath;
 
-    // Validate config file exists
     const fs = await import("fs/promises");
     try {
       await fs.access(configFile);
@@ -33,8 +22,6 @@ export async function POST(req: Request) {
       );
     }
 
-    // Return training instructions
-    // In production, you would trigger a background job here
     return NextResponse.json({
       success: true,
       message: "Training instructions",

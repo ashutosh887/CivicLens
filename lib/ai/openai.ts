@@ -1,7 +1,6 @@
 import OpenAI from "openai";
 import { AI_CONFIG } from "@/config/ai";
 
-// Lazy initialization to avoid build-time errors
 let openai: OpenAI | null = null;
 
 function getOpenAIClient(): OpenAI {
@@ -77,4 +76,3 @@ export async function* openAIChatStream(
     }
   }
 }
-

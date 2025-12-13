@@ -2,10 +2,6 @@ import { NextResponse } from "next/server";
 import { getAuthenticatedUser } from "@/lib/db";
 import axios from "axios";
 
-/**
- * API route to trigger Kestra weekly scheme updates workflow via webhook
- * This allows manual triggering of the workflow in addition to the scheduled runs
- */
 export async function POST(req: Request) {
   try {
     const authData = await getAuthenticatedUser();
@@ -19,15 +15,13 @@ export async function POST(req: Request) {
     const workflowId = "weekly-scheme-updates";
     const webhookKey = "weekly-scheme-updates-key";
 
-    // Construct webhook URL
     const webhookUrl = `${kestraUrl}/api/v1/executions/webhook/${namespace}/${workflowId}/${webhookKey}`;
 
-    // Send POST request to Kestra webhook (no body needed for this workflow)
     const kestraResponse = await axios.post(
       webhookUrl,
       {},
       {
-        timeout: 60000, // 60 second timeout for longer-running workflow
+        timeout: 60000,
         headers: {
           "Content-Type": "application/json",
         },

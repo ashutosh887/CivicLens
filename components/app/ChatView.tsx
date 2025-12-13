@@ -1,10 +1,10 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Send, X, Sparkles, Loader2 } from "lucide-react";
+import { Send, X, Sparkles, Loader2, ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useSendMessage, useChatState } from "@/hooks";
 import { InsightsSidebar } from "./InsightsSidebar";
@@ -30,6 +30,10 @@ export function ChatView({ chatId, initialMessages = [], chatTitle }: ChatViewPr
   const [messages, setMessages] = useState<Message[]>(initialMessages);
   const [streamingMessageId, setStreamingMessageId] = useState<string | null>(null);
   const [attachedFiles, setAttachedFiles] = useState<Array<{ id: string; filename: string; originalName: string; mimeType: string; size: number }>>([]);
+  const [showScrollButton, setShowScrollButton] = useState(false);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
+  const autoScrollEnabled = useRef(true);
   
   useChatState({ chatId, chatTitle });
 
@@ -41,14 +45,13 @@ export function ChatView({ chatId, initialMessages = [], chatTitle }: ChatViewPr
       setStreamingMessageId(null);
       setAttachedFiles([]);
       setMessages((prev) => {
-        // Remove any temporary streaming message and ensure we don't duplicate
         const filtered = prev.filter((m) => m.id !== streamingMessageId && m.id !== assistantMessage.id);
-        // Also remove any temp user messages that might have been added
         const withoutTemp = filtered.filter((m) => !m.id.startsWith("temp-"));
         return [...withoutTemp, assistantMessage];
       });
-      // Focus input after message is sent
+      autoScrollEnabled.current = true;
       setTimeout(() => {
+        scrollToBottom();
         inputRef.current?.focus();
       }, 100);
     },
@@ -75,6 +78,9 @@ export function ChatView({ chatId, initialMessages = [], chatTitle }: ChatViewPr
           ];
         }
       });
+      if (autoScrollEnabled.current) {
+        setTimeout(() => scrollToBottom(false), 50);
+      }
     },
     onError: (errorMessage) => {
       setStreamingMessageId(null);
@@ -92,6 +98,39 @@ export function ChatView({ chatId, initialMessages = [], chatTitle }: ChatViewPr
     setMessages(initialMessages);
   }, [initialMessages]);
 
+  const scrollToBottom = (smooth = true) => {
+    messagesEndRef.current?.scrollIntoView({ behavior: smooth ? "smooth" : "auto" });
+    autoScrollEnabled.current = true;
+    setShowScrollButton(false);
+  };
+
+  useEffect(() => {
+    if (autoScrollEnabled.current) {
+      scrollToBottom(false);
+    }
+  }, [messages, streamingMessageId]);
+
+  useEffect(() => {
+    const container = messagesContainerRef.current;
+    if (!container) return;
+
+    const handleScroll = () => {
+      const { scrollTop, scrollHeight, clientHeight } = container;
+      const isNearBottom = scrollHeight - scrollTop - clientHeight < 100;
+      
+      if (isNearBottom) {
+        autoScrollEnabled.current = true;
+        setShowScrollButton(false);
+      } else {
+        autoScrollEnabled.current = false;
+        setShowScrollButton(true);
+      }
+    };
+
+    container.addEventListener("scroll", handleScroll);
+    return () => container.removeEventListener("scroll", handleScroll);
+  }, []);
+
   const handleSend = async () => {
     const trimmedMessage = message.trim();
     if ((!trimmedMessage && attachedFiles.length === 0) || isLoading) return;
@@ -105,7 +144,9 @@ export function ChatView({ chatId, initialMessages = [], chatTitle }: ChatViewPr
     };
     
     setMessages((prev) => [...prev, userMessage]);
-    setMessage(""); // Clear message input
+    setMessage("");
+    autoScrollEnabled.current = true;
+    setTimeout(() => scrollToBottom(), 100);
     await sendMessage();
   };
 
@@ -219,10 +260,26 @@ export function ChatView({ chatId, initialMessages = [], chatTitle }: ChatViewPr
   );
 
   return (
-    <div className="flex h-full flex-col">
+    <div className="flex h-full flex-col relative">
       <div className="flex-1 overflow-hidden flex">
-        <div className="flex-1 overflow-y-auto p-6 scrollbar-thin scrollbar-thumb-border scrollbar-track-transparent">
+        <div 
+          ref={messagesContainerRef}
+          className="flex-1 overflow-y-auto p-6 scrollbar-thin scrollbar-thumb-border scrollbar-track-transparent relative"
+        >
           {messages.length === 0 ? emptyState : messagesList}
+          <div ref={messagesEndRef} />
+          {showScrollButton && (
+            <div className="sticky bottom-4 flex justify-center z-10">
+              <Button
+                onClick={() => scrollToBottom()}
+                size="icon"
+                className="rounded-full shadow-lg h-10 w-10 bg-primary hover:bg-primary/90"
+                aria-label="Scroll to bottom"
+              >
+                <ChevronDown className="h-5 w-5" />
+              </Button>
+            </div>
+          )}
         </div>
         {messages.length > 0 && (
           <InsightsSidebar 
