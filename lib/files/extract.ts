@@ -83,9 +83,11 @@ async function extractPDFContent(
     let pdfText = "";
     try {
       // Dynamic import to avoid breaking if pdf-parse is not installed
-      const pdfParse = await import("pdf-parse").catch(() => null);
-      if (pdfParse && pdfParse.default) {
-        const pdfData = await pdfParse.default(buffer);
+      // Using Function constructor to prevent TypeScript from checking the import at compile time
+      const dynamicImport = new Function('specifier', 'return import(specifier)');
+      const pdfParseModule = await dynamicImport('pdf-parse').catch(() => null);
+      if (pdfParseModule && pdfParseModule.default) {
+        const pdfData = await pdfParseModule.default(buffer);
         pdfText = pdfData.text;
       }
     } catch (importError) {
