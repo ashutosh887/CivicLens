@@ -1,0 +1,49 @@
+# Oumi Fine-tuning Configuration for CivicLens
+# Fine-tune a model specifically for global civic queries
+
+model:
+  base_model: "meta-llama/Llama-3.1-8B-Instruct"
+  output_dir: "./models/civiclens-finetuned"
+  trust_remote_code: true
+
+data:
+  train_file: "./oumi/dataset.json"
+  validation_split: 0.15  # Increased validation split for better evaluation
+  format: "alpaca"  # instruction-input-output format
+  max_seq_length: 2048  # Increased for longer responses
+
+training:
+  method: "lora"  # Use LoRA for efficient fine-tuning
+  lora_r: 32  # Increased rank for better adaptation
+  lora_alpha: 64  # 2x rank for better scaling
+  lora_dropout: 0.1  # Slightly increased dropout
+  target_modules: ["q_proj", "v_proj", "k_proj", "o_proj"]  # Target attention layers
+  learning_rate: 1e-4  # Lower learning rate for stability
+  batch_size: 8  # Increased batch size
+  num_epochs: 5  # More epochs for better learning
+  gradient_accumulation_steps: 2  # Effective batch size: 16
+  warmup_steps: 50
+  weight_decay: 0.01
+  max_grad_norm: 1.0  # Gradient clipping
+
+evaluation:
+  metrics: ["perplexity", "bleu", "rouge"]  # Added ROUGE for better evaluation
+  eval_steps: 25  # More frequent evaluation
+  save_strategy: "steps"
+  evaluation_strategy: "steps"
+
+output:
+  save_steps: 50  # More frequent saves
+  logging_steps: 5  # More frequent logging
+  save_total_limit: 3  # Keep only last 3 checkpoints
+  load_best_model_at_end: true  # Load best model after training
+  metric_for_best_model: "perplexity"  # Use perplexity to select best model
+  greater_is_better: false  # Lower perplexity is better
+
+# Advanced settings
+optimizer: "adamw_torch"
+lr_scheduler_type: "cosine"
+fp16: true  # Use mixed precision for faster training
+dataloader_num_workers: 4
+report_to: ["tensorboard"]  # Log to tensorboard
+

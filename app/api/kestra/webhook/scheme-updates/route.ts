@@ -1,0 +1,58 @@
+import { NextResponse } from "next/server";
+import { getAuthenticatedUser } from "@/lib/db";
+import axios from "axios";
+
+/**
+ * API route to trigger Kestra weekly scheme updates workflow via webhook
+ * This allows manual triggering of the workflow in addition to the scheduled runs
+ */
+export async function POST(req: Request) {
+  try {
+    const authData = await getAuthenticatedUser();
+    if (!authData) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const kestraUrl = process.env.KESTRA_URL || "http://localhost:8080";
+
+    const namespace = "civiclens";
+    const workflowId = "weekly-scheme-updates";
+    const webhookKey = "weekly-scheme-updates-key";
+
+    // Construct webhook URL
+    const webhookUrl = `${kestraUrl}/api/v1/executions/webhook/${namespace}/${workflowId}/${webhookKey}`;
+
+    // Send POST request to Kestra webhook (no body needed for this workflow)
+    const kestraResponse = await axios.post(
+      webhookUrl,
+      {},
+      {
+        timeout: 60000, // 60 second timeout for longer-running workflow
+        headers: {
+          "Content-Type": "application/json",
+        },
+      }
+    );
+
+    const executionId = kestraResponse.data.id;
+
+    return NextResponse.json({
+      success: true,
+      executionId,
+      message: "Scheme updates workflow triggered successfully",
+      note: "This workflow may take several minutes to complete. Check Kestra UI for progress.",
+    });
+  } catch (error: any) {
+    console.error("Kestra webhook error:", error);
+    return NextResponse.json(
+      {
+        success: false,
+        error:
+          error.response?.data?.message ||
+          error.message ||
+          "Failed to trigger scheme updates workflow",
+      },
+      { status: error.response?.status || 500 }
+    );
+  }
+}

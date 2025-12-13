@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { checkDatabaseConnection, getOrCreateUser, getAuthenticatedUser } from "@/lib/db";
 import { NextResponse } from "next/server";
+import { CHAT_CONFIG } from "@/config/chat";
 
 export async function POST(req: Request) {
   try {
@@ -24,7 +25,7 @@ export async function POST(req: Request) {
     const chat = await prisma.chat.create({
       data: {
         userId: dbUser.id,
-        title: "New Chat",
+        title: CHAT_CONFIG.defaultChatTitle,
       },
     });
 

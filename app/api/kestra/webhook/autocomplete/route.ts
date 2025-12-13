@@ -1,0 +1,71 @@
+import { NextResponse } from "next/server";
+import { getAuthenticatedUser } from "@/lib/db";
+import axios from "axios";
+
+/**
+ * API route to trigger Kestra autocomplete suggestions workflow via webhook
+ * This route acts as a secure proxy between your Next.js app and Kestra
+ */
+export async function POST(req: Request) {
+  try {
+    const authData = await getAuthenticatedUser();
+    if (!authData) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const { user_query } = await req.json();
+
+    if (!user_query || typeof user_query !== "string") {
+      return NextResponse.json(
+        { error: "user_query is required and must be a string" },
+        { status: 400 }
+      );
+    }
+
+    const kestraUrl = process.env.KESTRA_URL || "http://localhost:8080";
+
+    const namespace = "civiclens";
+    const workflowId = "autocomplete-suggestions";
+    const webhookKey = "autocomplete-suggestions-key";
+
+    // Construct webhook URL
+    const webhookUrl = `${kestraUrl}/api/v1/executions/webhook/${namespace}/${workflowId}/${webhookKey}`;
+
+    // Send POST request to Kestra webhook
+    const kestraResponse = await axios.post(
+      webhookUrl,
+      {
+        user_query,
+      },
+      {
+        timeout: 30000, // 30 second timeout
+        headers: {
+          "Content-Type": "application/json",
+        },
+      }
+    );
+
+    // The webhook is configured to return the output value directly
+    const suggestions = kestraResponse.data.value;
+    const executionId = kestraResponse.data.id;
+
+    return NextResponse.json({
+      success: true,
+      executionId,
+      data: suggestions,
+      message: "Autocomplete suggestions generated successfully",
+    });
+  } catch (error: any) {
+    console.error("Kestra webhook error:", error);
+    return NextResponse.json(
+      {
+        success: false,
+        error:
+          error.response?.data?.message ||
+          error.message ||
+          "Failed to generate autocomplete suggestions",
+      },
+      { status: error.response?.status || 500 }
+    );
+  }
+}

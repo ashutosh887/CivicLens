@@ -1,7 +1,7 @@
 const config = {
   appName: "CivicLens",
   appDescription: "Bringing clarity to public services for everyone.",
-  appUrl: "http://tryciviclens.vercel.app",
+  appUrl: process.env.NEXT_PUBLIC_APP_URL || "https://tryciviclens.vercel.app",
   adminEmails: ["ashutoshj887@gmail.com"],
   founder: {
     name: "Ashutosh",

@@ -1,0 +1,145 @@
+id: autocomplete-suggestions
+namespace: civiclens
+description: Generate autocomplete suggestions based on user input and scheme data
+
+tasks:
+  - id: load-scheme-data
+    type: io.kestra.core.tasks.storages.LocalFiles
+    description: Load scheme data from previous workflows
+    timeout: PT30S
+    inputs:
+      schemes.json: "{{ read('schemes.json') }}"
+
+  - id: process-user-input
+    type: io.kestra.core.tasks.scripts.Node
+    description: Process user input and extract key information
+    timeout: PT1M
+    script: |
+      const userInput = {{ inputs.user_query | json }};
+      
+      // Extract age, location, income hints from user input
+      const ageMatch = userInput.match(/(\d+)\s*(?:years?|yrs?|age)/i);
+      const locationMatch = userInput.match(/(?:in|from|at)\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+)*)/i);
+      const incomeMatch = userInput.match(/(?:income|salary|earn|make)\s+(?:of|is)?\s*\$?(\d+(?:,\d+)*(?:k|K|thousand|million)?)/i);
+      
+      const keywords = userInput
+        .toLowerCase()
+        .split(/\s+/)
+        .filter(word => word.length > 3)
+        .slice(0, 10);
+      
+      const extracted = {
+        age: ageMatch ? parseInt(ageMatch[1]) : null,
+        location: locationMatch ? locationMatch[1] : null,
+        income: incomeMatch ? incomeMatch[1] : null,
+        keywords: keywords,
+        original_query: userInput
+      };
+      
+      return extracted;
+
+  - id: match-schemes
+    type: io.kestra.core.tasks.scripts.Node
+    description: Match user profile to relevant schemes
+    timeout: PT1M
+    script: |
+      const schemes = {{ outputs.load-scheme-data.value | json }};
+      const userProfile = {{ outputs.process-user-input.value | json }};
+      
+      if (!schemes || !Array.isArray(schemes)) {
+        return [];
+      }
+      
+      // Simple matching algorithm
+      const matches = schemes
+        .map(scheme => {
+          let score = 0;
+          
+          // Keyword matching
+          if (scheme.title && userProfile.keywords) {
+            const titleLower = scheme.title.toLowerCase();
+            userProfile.keywords.forEach(keyword => {
+              if (titleLower.includes(keyword)) {
+                score += 2;
+              }
+            });
+          }
+          
+          // Age matching
+          if (userProfile.age && scheme.eligibility) {
+            if (scheme.eligibility.age_requirements) {
+              const ageReq = scheme.eligibility.age_requirements;
+              if (userProfile.age >= (ageReq.min || 0) && userProfile.age <= (ageReq.max || 100)) {
+                score += 5;
+              }
+            }
+          }
+          
+          // Location matching
+          if (userProfile.location && scheme.country) {
+            if (scheme.country.toLowerCase().includes(userProfile.location.toLowerCase())) {
+              score += 3;
+            }
+          }
+          
+          return { scheme, score };
+        })
+        .filter(item => item.score > 0)
+        .sort((a, b) => b.score - a.score)
+        .slice(0, 5)
+        .map(item => item.scheme);
+      
+      return matches;
+
+  - id: generate-suggestions
+    type: io.kestra.plugin.openai.ChatCompletion
+    description: Generate natural language suggestions using AI
+    model: gpt-4o-mini
+    maxTokens: 500
+    timeout: PT1M
+    messages:
+      - role: system
+        content: |
+          Generate helpful autocomplete suggestions for civic queries. 
+          Suggest relevant government schemes based on user profile.
+          Return 3-5 concise suggestions, one per line.
+      - role: user
+        content: |
+          User query: {{ inputs.user_query | json }}
+          Matched schemes: {{ outputs.match-schemes.value | json }}
+          
+          Generate 3-5 autocomplete suggestions that complete or expand on the user's query.
+    store: true
+
+  - id: return-suggestions
+    type: io.kestra.core.tasks.scripts.Node
+    description: Format and return suggestions
+    timeout: PT30S
+    script: |
+      const suggestions = {{ outputs.generate-suggestions.choices[0].message.content | json }};
+      
+      return {
+        query: {{ inputs.user_query | json }},
+        suggestions: suggestions
+          .split('\n')
+          .map(s => s.trim())
+          .filter(s => s.length > 0 && !s.match(/^\d+\./))
+          .slice(0, 5),
+        matched_schemes: {{ outputs.match-schemes.value | json }},
+        profile: {{ outputs.process-user-input.value | json }}
+      };
+
+triggers:
+  - id: webhook
+    type: io.kestra.plugin.core.trigger.Webhook
+    key: autocomplete-suggestions-key
+    description: Webhook trigger for generating autocomplete suggestions
+    response:
+      type: "OUTPUTS"
+      value: "{{ outputs.return-suggestions.value }}"
+
+inputs:
+  user_query:
+    type: STRING
+    required: true
+    description: Partial user query for autocomplete

@@ -1,0 +1,25 @@
+# Kestra Configuration for Next.js Integration
+# Place this file in your Kestra configuration directory
+# For Docker: mount to /app/application.yml
+# For local: place in Kestra installation directory
+
+micronaut:
+  server:
+    cors:
+      enabled: true
+      configurations:
+        all:
+          allowedOrigins:
+            - http://localhost:3000  # Next.js default port (dev)
+            - http://localhost:5173  # Vite dev server (if used)
+            - https://*.vercel.app   # Vercel deployments (wildcard for all)
+            - https://tryciviclens.vercel.app  # Production app URL
+          allowedMethods:
+            - GET
+            - POST
+            - PUT
+            - DELETE
+            - OPTIONS
+          allowedHeaders:
+            - "*"
+          allowCredentials: true

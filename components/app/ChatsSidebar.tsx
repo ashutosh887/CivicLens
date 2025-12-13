@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useUser, SignOutButton } from "@clerk/nextjs";
+import { useUser } from "@clerk/nextjs";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -21,7 +21,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { MessageSquare, Pencil, Trash2, Check, X, MoreVertical, Settings, LogOut } from "lucide-react";
+import { MessageSquare, Pencil, Trash2, Check, X, MoreVertical, Settings } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useChatOperations } from "@/hooks";
 
@@ -95,12 +95,12 @@ export function ChatsSidebar({ chats }: ChatsSidebarProps) {
 
   return (
     <div className="flex h-full w-64 flex-col border-r border-border bg-sidebar">
-      <div className="px-3 pt-4 pb-2">
+      <div className="px-3 pt-4 pb-3">
         <button
           onClick={handleNewChat}
           disabled={isLoading}
           className={cn(
-            "flex items-center gap-2 text-sm text-sidebar-foreground hover:text-sidebar-foreground/80 transition-colors cursor-pointer px-3 py-1.5 rounded-md hover:bg-sidebar-accent/50",
+            "w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-sidebar-foreground hover:bg-sidebar-accent/50 transition-colors cursor-pointer",
             isLoading && "opacity-50 cursor-not-allowed"
           )}
           aria-label="New chat"
@@ -113,14 +113,19 @@ export function ChatsSidebar({ chats }: ChatsSidebarProps) {
       <div className="flex-1 overflow-y-auto">
         {chats.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full text-center px-4">
-            <MessageSquare className="h-8 w-8 text-muted-foreground mb-2" />
-            <p className="text-sm text-muted-foreground">
-              No chats yet. Start a new conversation!
+            <div className="p-4 rounded-full bg-muted/50 mb-3">
+              <MessageSquare className="h-6 w-6 text-muted-foreground" />
+            </div>
+            <p className="text-sm font-medium text-foreground mb-1">
+              No chats yet
+            </p>
+            <p className="text-xs text-muted-foreground">
+              Start a new conversation!
             </p>
           </div>
         ) : (
-          <div className="px-3 pt-2 pb-2">
-            <h3 className="text-xs font-medium text-muted-foreground mb-3 px-3">Your chats</h3>
+          <div className="px-3 pt-4 pb-2">
+            <h3 className="text-[10px] font-medium text-muted-foreground mb-3 px-2 uppercase tracking-wider">Your chats</h3>
             <div className="space-y-1">
             {chats.map((chat) => {
               const isActive = pathname === `/chats/${chat.id}`;
@@ -129,8 +134,8 @@ export function ChatsSidebar({ chats }: ChatsSidebarProps) {
                 <div
                   key={chat.id}
                   className={cn(
-                    "group relative flex items-center gap-2 rounded-lg transition-colors w-full",
-                    isActive && "bg-sidebar-accent text-sidebar-accent-foreground shadow-sm",
+                    "group relative flex items-center gap-2 rounded-lg transition-all w-full",
+                    isActive && "bg-sidebar-accent text-sidebar-accent-foreground",
                     isHovered && !isActive && "bg-sidebar-accent/50"
                   )}
                   onMouseEnter={() => setHoveredChat(chat.id)}
@@ -273,41 +278,28 @@ export function ChatsSidebar({ chats }: ChatsSidebarProps) {
         )}
       </div>
 
-      <div className="border-t border-border p-4 space-y-3">
-        <div className="flex items-center justify-between gap-2">
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-semibold text-sidebar-foreground truncate">
-              {user?.fullName || user?.firstName || user?.username || "User"}
-            </p>
-            <p className="text-xs text-muted-foreground truncate">
-              {user?.primaryEmailAddress?.emailAddress || ""}
-            </p>
-          </div>
-          <Button
-            variant="ghost"
-            size="icon"
-            className={cn(
-              "h-8 w-8 shrink-0",
-              pathname === "/settings" && "bg-sidebar-accent text-sidebar-accent-foreground"
-            )}
-            asChild
-          >
-            <Link href="/settings" title="Settings">
-              <Settings className="h-4 w-4" />
-            </Link>
-          </Button>
+      <div className="border-t border-border/50 bg-sidebar/50 px-3 flex items-center justify-between h-14">
+        <div className="flex-1 min-w-0 flex flex-col justify-center">
+          <p className="text-sm font-semibold text-sidebar-foreground truncate leading-tight">
+            {user?.fullName || user?.firstName || user?.username || "User"}
+          </p>
+          <p className="text-xs text-muted-foreground truncate leading-tight mt-0.5">
+            {user?.primaryEmailAddress?.emailAddress || "\u00A0"}
+          </p>
         </div>
-        <SignOutButton redirectUrl="/">
-          <Button
-            variant="outline"
-            size="sm"
-            className="w-full justify-between"
-            type="button"
-          >
-            <span>Logout</span>
-            <LogOut className="h-4 w-4" />
-          </Button>
-        </SignOutButton>
+        <Button
+          variant="ghost"
+          size="icon"
+          className={cn(
+            "h-9 w-9",
+            pathname === "/settings" && "bg-sidebar-accent text-sidebar-accent-foreground"
+          )}
+          asChild
+        >
+          <Link href="/settings" title="Settings">
+            <Settings className="h-4 w-4" />
+          </Link>
+        </Button>
       </div>
 
       <Dialog 

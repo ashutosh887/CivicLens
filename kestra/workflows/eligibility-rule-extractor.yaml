@@ -1,0 +1,138 @@
+id: eligibility-rule-extractor
+namespace: civiclens
+description: Extract eligibility criteria from scheme PDFs and convert to structured JSON
+
+tasks:
+  - id: download-pdf
+    type: io.kestra.core.tasks.http.Requests
+    description: Download scheme PDF from government portal
+    uri: "{{ inputs.pdf_url }}"
+    method: GET
+    headers:
+      User-Agent: CivicLens-Bot/1.0
+      Accept: application/pdf
+    timeout: PT2M
+    store: true
+
+  - id: extract-text
+    type: io.kestra.plugin.scripts.shell.Commands
+    description: Extract text from PDF using pdftotext
+    timeout: PT5M
+    commands:
+      - |
+        if command -v pdftotext &> /dev/null; then
+          pdftotext "{{ outputs.download-pdf.path }}" "{{ outputs.download-pdf.path }}.txt"
+        elif command -v python3 &> /dev/null; then
+          python3 -c "
+          import PyPDF2
+          import sys
+          with open('{{ outputs.download-pdf.path }}', 'rb') as f:
+              reader = PyPDF2.PdfReader(f)
+              text = ''
+              for page in reader.pages:
+                  text += page.extract_text() + '\n'
+          with open('{{ outputs.download-pdf.path }}.txt', 'w', encoding='utf-8') as f:
+              f.write(text)
+          "
+        else
+          echo "Error: No PDF extraction tool available"
+          exit 1
+        fi
+    store: true
+
+  - id: extract-rules
+    type: io.kestra.plugin.openai.ChatCompletion
+    description: Use AI to extract structured eligibility rules from PDF text
+    model: gpt-4o-mini
+    maxTokens: 2000
+    timeout: PT3M
+    messages:
+      - role: system
+        content: |
+          Extract eligibility criteria from government scheme documents and return 
+          structured JSON with:
+          - scheme_name: Name of the scheme
+          - country: Country where scheme is applicable
+          - age_requirements: Minimum/maximum age if applicable
+          - income_criteria: Income limits and thresholds
+          - location_requirements: Geographic restrictions
+          - document_requirements: List of required documents
+          - other_criteria: Any other eligibility conditions
+          - benefits: What benefits are provided
+          - application_process: How to apply
+          Return ONLY valid JSON, no other text.
+      - role: user
+        content: |
+          Extract eligibility rules from this scheme document:
+          
+          Scheme: {{ inputs.scheme_name }}
+          Country: {{ inputs.country | default("Unknown") }}
+          
+          Document text:
+          {{ read(outputs.extract-text.path + '.txt') }}
+    store: true
+
+  - id: validate-json
+    type: io.kestra.core.tasks.scripts.Node
+    description: Validate and structure extracted JSON
+    timeout: PT1M
+    script: |
+      const extracted = {{ outputs.extract-rules.choices[0].message.content }};
+      
+      // Try to parse JSON from response
+      let parsed;
+      try {
+        // Remove markdown code blocks if present
+        const cleaned = extracted.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+        parsed = JSON.parse(cleaned);
+      } catch (e) {
+        // Try to extract JSON object from text
+        const jsonMatch = extracted.match(/\{[\s\S]*\}/);
+        if (jsonMatch) {
+          parsed = JSON.parse(jsonMatch[0]);
+        } else {
+          throw new Error('No valid JSON found in response');
+        }
+      }
+      
+      // Validate and structure the JSON
+      const structured = {
+        scheme_name: {{ inputs.scheme_name | json }},
+        country: {{ inputs.country | default("Unknown") | json }},
+        eligibility: parsed,
+        extracted_at: new Date().toISOString(),
+        source_url: {{ inputs.pdf_url | json }},
+        extraction_method: "ai_pdf_parsing"
+      };
+      
+      return structured;
+
+  - id: store-rules
+    type: io.kestra.core.tasks.storages.LocalFiles
+    description: Store structured eligibility rules
+    inputs:
+      eligibility-rules.json: "{{ outputs.validate-json.value | json }}"
+
+triggers:
+  - id: webhook
+    type: io.kestra.plugin.core.trigger.Webhook
+    key: eligibility-extractor-key
+    description: Webhook trigger to extract eligibility rules from PDFs
+    response:
+      type: "OUTPUTS"
+      value: "{{ outputs.store-rules.uri }}"
+
+inputs:
+  pdf_url:
+    type: STRING
+    required: true
+    description: URL of the scheme PDF document
+  scheme_name:
+    type: STRING
+    required: true
+    description: Name of the government scheme
+  country:
+    type: STRING
+    required: false
+    default: "Unknown"
+    description: Country where the scheme is applicable

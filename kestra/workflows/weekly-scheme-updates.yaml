@@ -1,0 +1,201 @@
+id: weekly-scheme-updates
+namespace: civiclens
+description: Weekly automated workflow to crawl government portals and update scheme information for multiple countries
+
+tasks:
+  # Parallel fetch from multiple countries
+  - id: fetch-feeds-parallel
+    type: io.kestra.core.tasks.flows.Parallel
+    tasks:
+      - id: fetch-india-feeds
+        type: io.kestra.core.tasks.http.Requests
+        description: Fetch RSS feeds from India government portals
+        uri: https://www.india.gov.in/rss-feeds
+        method: GET
+        headers:
+          User-Agent: CivicLens-Bot/1.0
+          Accept: application/rss+xml, application/xml, text/xml
+        timeout: PT30S
+        store: true
+
+      - id: fetch-us-feeds
+        type: io.kestra.core.tasks.http.Requests
+        description: Fetch data from USA government portals
+        uri: https://www.usa.gov/rss-feeds
+        method: GET
+        headers:
+          User-Agent: CivicLens-Bot/1.0
+          Accept: application/rss+xml, application/xml, text/xml
+        timeout: PT30S
+        store: true
+
+      - id: fetch-uk-feeds
+        type: io.kestra.core.tasks.http.Requests
+        description: Fetch data from UK government portals
+        uri: https://www.gov.uk/government/announcements.atom
+        method: GET
+        headers:
+          User-Agent: CivicLens-Bot/1.0
+          Accept: application/atom+xml, application/xml, text/xml
+        timeout: PT30S
+        store: true
+
+      - id: fetch-canada-feeds
+        type: io.kestra.core.tasks.http.Requests
+        description: Fetch data from Canada government portals
+        uri: https://www.canada.ca/en/services/news.xml
+        method: GET
+        headers:
+          User-Agent: CivicLens-Bot/1.0
+          Accept: application/rss+xml, application/xml, text/xml
+        timeout: PT30S
+        store: true
+
+  # Parse feeds with error handling
+  - id: parse-all-feeds
+    type: io.kestra.core.tasks.scripts.Node
+    description: Parse RSS/Atom feeds from all countries and extract scheme updates
+    timeout: PT2M
+    script: |
+      const parser = require('rss-parser');
+      const parserInstance = new parser({
+        customFields: {
+          item: ['description', 'content', 'summary']
+        }
+      });
+      
+      const allSchemes = {
+        india: [],
+        usa: [],
+        uk: [],
+        canada: []
+      };
+      
+      // Parse India feeds
+      try {
+        const indiaResponse = {{ outputs.fetch-feeds-parallel.tasks.fetch-india-feeds.body }};
+        if (indiaResponse) {
+          const feed = await parserInstance.parseString(indiaResponse);
+          allSchemes.india = feed.items
+            .filter(item => item.title && item.link)
+            .slice(0, 10)
+            .map(item => ({
+              title: item.title,
+              link: item.link,
+              description: item.description || item.content || '',
+              pubDate: item.pubDate
+            }));
+        }
+      } catch (e) {
+        console.error('Error parsing India feeds:', e.message);
+      }
+      
+      // Parse USA feeds
+      try {
+        const usaResponse = {{ outputs.fetch-feeds-parallel.tasks.fetch-us-feeds.body }};
+        if (usaResponse) {
+          const feed = await parserInstance.parseString(usaResponse);
+          allSchemes.usa = feed.items
+            .filter(item => item.title && item.link)
+            .slice(0, 10)
+            .map(item => ({
+              title: item.title,
+              link: item.link,
+              description: item.description || item.content || '',
+              pubDate: item.pubDate
+            }));
+        }
+      } catch (e) {
+        console.error('Error parsing USA feeds:', e.message);
+      }
+      
+      // Parse UK feeds
+      try {
+        const ukResponse = {{ outputs.fetch-feeds-parallel.tasks.fetch-uk-feeds.body }};
+        if (ukResponse) {
+          const feed = await parserInstance.parseString(ukResponse);
+          allSchemes.uk = feed.items
+            .filter(item => item.title && item.link)
+            .slice(0, 10)
+            .map(item => ({
+              title: item.title,
+              link: item.link,
+              description: item.description || item.content || item.summary || '',
+              pubDate: item.pubDate
+            }));
+        }
+      } catch (e) {
+        console.error('Error parsing UK feeds:', e.message);
+      }
+      
+      // Parse Canada feeds
+      try {
+        const canadaResponse = {{ outputs.fetch-feeds-parallel.tasks.fetch-canada-feeds.body }};
+        if (canadaResponse) {
+          const feed = await parserInstance.parseString(canadaResponse);
+          allSchemes.canada = feed.items
+            .filter(item => item.title && item.link)
+            .slice(0, 10)
+            .map(item => ({
+              title: item.title,
+              link: item.link,
+              description: item.description || item.content || '',
+              pubDate: item.pubDate
+            }));
+        }
+      } catch (e) {
+        console.error('Error parsing Canada feeds:', e.message);
+      }
+      
+      return allSchemes;
+
+  # Summarize with AI
+  - id: summarize-changes
+    type: io.kestra.plugin.openai.ChatCompletion
+    description: Use AI to summarize scheme changes and updates for all countries
+    model: gpt-4o-mini
+    maxTokens: 2000
+    timeout: PT2M
+    messages:
+      - role: system
+        content: |
+          You are a global civic information assistant. Summarize government scheme updates 
+          from multiple countries (India, USA, UK, Canada, Australia) in clear, concise language. 
+          Focus on eligibility, benefits, and application processes. Specify country for each scheme.
+          Return structured JSON with country, scheme name, key updates, and eligibility changes.
+      - role: user
+        content: |
+          Summarize the following scheme updates from multiple countries:
+          {{ outputs.parse-all-feeds.value | json }}
+    store: true
+
+  # Store updates using internal storage (best practice for large data)
+  - id: store-updates
+    type: io.kestra.core.tasks.storages.LocalFiles
+    description: Store summarized updates for all countries
+    inputs:
+      updates.json: |
+        {
+          "timestamp": "{{ execution.startDate }}",
+          "execution_id": "{{ execution.id }}",
+          "countries": ["india", "usa", "uk", "canada"],
+          "schemes": {{ outputs.summarize-changes.choices[0].message.content | json }},
+          "raw_feeds_count": {
+            "india": {{ outputs.parse-all-feeds.value.india | length }},
+            "usa": {{ outputs.parse-all-feeds.value.usa | length }},
+            "uk": {{ outputs.parse-all-feeds.value.uk | length }},
+            "canada": {{ outputs.parse-all-feeds.value.canada | length }}
+          }
+        }
+
+triggers:
+  - id: weekly-schedule
+    type: io.kestra.core.models.triggers.types.Schedule
+    cron: "0 9 * * 1"  # Every Monday at 9 AM IST
+    timezone: Asia/Kolkata
+    inputs:
+      enabled: true
+  - id: webhook
+    type: io.kestra.plugin.core.trigger.Webhook
+    key: weekly-scheme-updates-key
+    description: Webhook trigger for manual or API-triggered scheme updates
