@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Send, X, Sparkles, Loader2, ChevronDown } from "lucide-react";
+import { Send, X, Sparkles, Loader2, ChevronDown, Info } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useSendMessage, useChatState } from "@/hooks";
 import { InsightsSidebar } from "./InsightsSidebar";
@@ -31,6 +31,7 @@ export function ChatView({ chatId, initialMessages = [], chatTitle }: ChatViewPr
   const [streamingMessageId, setStreamingMessageId] = useState<string | null>(null);
   const [attachedFiles, setAttachedFiles] = useState<Array<{ id: string; filename: string; originalName: string; mimeType: string; size: number }>>([]);
   const [showScrollButton, setShowScrollButton] = useState(false);
+  const [showInsights, setShowInsights] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const autoScrollEnabled = useRef(true);
@@ -281,38 +282,62 @@ export function ChatView({ chatId, initialMessages = [], chatTitle }: ChatViewPr
     </div>
   );
 
+  const currentQuery = message || (messages[messages.length - 1]?.role === "user" ? messages[messages.length - 1].content : "");
+  const hasInsights = currentQuery && currentQuery.length >= 10;
+
+  useEffect(() => {
+    if (hasInsights && !showInsights) {
+      const timer = setTimeout(() => {
+        setShowInsights(true);
+      }, 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [hasInsights, showInsights]);
+
   return (
     <div className="flex h-full flex-col relative">
-      <div className="flex-1 overflow-hidden flex">
-        <div 
-          ref={messagesContainerRef}
-          className="flex-1 overflow-y-auto p-6 scrollbar-thin scrollbar-thumb-border scrollbar-track-transparent relative"
-        >
-          {messages.length === 0 ? emptyState : messagesList}
-          <div ref={messagesEndRef} />
-          {showScrollButton && (
-            <div className="sticky bottom-4 flex justify-center z-10">
-              <Button
-                onClick={() => scrollToBottom()}
-                size="icon"
-                className="rounded-full shadow-lg h-10 w-10 bg-primary hover:bg-primary/90"
-                aria-label="Scroll to bottom"
-              >
-                <ChevronDown className="h-5 w-5" />
-              </Button>
+      <div className="flex-1 overflow-hidden flex relative">
+        <div className="flex-1 flex flex-col">
+          <div 
+            ref={messagesContainerRef}
+            className={cn(
+              "flex-1 overflow-y-auto p-6 scrollbar-thin scrollbar-thumb-border scrollbar-track-transparent relative transition-all duration-200"
+            )}
+          >
+            <div className="absolute top-4 right-4 z-20">
+              {hasInsights && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setShowInsights(!showInsights)}
+                  className={cn(
+                    "h-8 w-8 rounded-full shadow-sm hover:shadow-md transition-all",
+                    showInsights ? "bg-primary text-primary-foreground" : "bg-background/80 backdrop-blur-sm border border-border"
+                  )}
+                  aria-label={showInsights ? "Hide insights" : "Show insights"}
+                >
+                  <Info className="h-4 w-4" />
+                </Button>
+              )}
             </div>
-          )}
-        </div>
-        {messages.length > 0 && (
-          <InsightsSidebar 
-            query={message || (messages[messages.length - 1]?.role === "user" ? messages[messages.length - 1].content : "")} 
-            className="w-64 hidden lg:block"
-          />
-        )}
-      </div>
+            {messages.length === 0 ? emptyState : messagesList}
+            <div ref={messagesEndRef} />
+            {showScrollButton && (
+              <div className="sticky bottom-4 flex justify-center z-10">
+                <Button
+                  onClick={() => scrollToBottom()}
+                  size="icon"
+                  className="rounded-full shadow-lg h-10 w-10 bg-primary hover:bg-primary/90"
+                  aria-label="Scroll to bottom"
+                >
+                  <ChevronDown className="h-5 w-5" />
+                </Button>
+              </div>
+            )}
+          </div>
 
-      <div className="border-t border-border/50 bg-background/95 backdrop-blur-sm supports-backdrop-filter:bg-background/60 flex items-center h-14">
-        <div className="max-w-3xl mx-auto w-full flex items-center gap-2 h-full">
+          <div className="border-t border-border/50 bg-background/95 backdrop-blur-sm supports-backdrop-filter:bg-background/60 flex items-center h-14 shrink-0">
+            <div className="max-w-3xl mx-auto w-full flex items-center gap-2 h-full">
           {attachedFiles.length > 0 && (
             <div className="flex flex-wrap gap-2 border-r border-border/50 pr-2 mr-2">
               {attachedFiles.map((file) => (
@@ -364,7 +389,16 @@ export function ChatView({ chatId, initialMessages = [], chatTitle }: ChatViewPr
           >
             <Send className="h-4 w-4" />
           </Button>
+            </div>
+          </div>
         </div>
+        {showInsights && hasInsights && (
+          <InsightsSidebar 
+            query={currentQuery} 
+            className="w-80 hidden lg:flex"
+            onClose={() => setShowInsights(false)}
+          />
+        )}
       </div>
     </div>
   );

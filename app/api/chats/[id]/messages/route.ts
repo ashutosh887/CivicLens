@@ -62,7 +62,7 @@ export async function POST(req: Request, { params }: RouteParams) {
         const fileContents = await extractMultipleFileContents(fileIds);
         enhancedContent = formatFileContentsForPrompt(fileContents, content || "");
       } catch (error) {
-        console.error("Error extracting file contents:", error);
+        // Continue without file content if extraction fails
       }
     }
     const userMessage = await prisma.message.create({

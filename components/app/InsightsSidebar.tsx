@@ -1,13 +1,15 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Sparkles, Building2, FileText, MapPin, CheckCircle } from "lucide-react";
+import { Sparkles, Building2, FileText, MapPin, CheckCircle, X } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 interface InsightsSidebarProps {
   query: string;
   className?: string;
+  onClose?: () => void;
 }
 
 interface ExtractedData {
@@ -17,7 +19,7 @@ interface ExtractedData {
   suggested_actions: string[];
 }
 
-export function InsightsSidebar({ query, className }: InsightsSidebarProps) {
+export function InsightsSidebar({ query, className, onClose }: InsightsSidebarProps) {
   const [insights, setInsights] = useState<ExtractedData | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -58,11 +60,25 @@ export function InsightsSidebar({ query, className }: InsightsSidebarProps) {
   }
 
   return (
-    <div className={cn("border-l border-border bg-muted/30 p-4 space-y-5 overflow-y-auto", className)}>
-      <div className="flex items-center gap-2 pb-2 border-b border-border/50">
-        <Sparkles className="h-4 w-4 text-primary" />
-        <h3 className="text-sm font-semibold">Insights</h3>
+    <div className={cn("border-l border-border bg-muted/30 flex flex-col h-full", className)}>
+      <div className="flex items-center justify-between gap-2 p-4 pb-3 border-b border-border/50 shrink-0">
+        <div className="flex items-center gap-2">
+          <Sparkles className="h-4 w-4 text-primary" />
+          <h3 className="text-sm font-semibold">Insights</h3>
+        </div>
+        {onClose && (
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={onClose}
+            className="h-6 w-6 rounded-full hover:bg-muted"
+            aria-label="Close insights"
+          >
+            <X className="h-4 w-4" />
+          </Button>
+        )}
       </div>
+      <div className="flex-1 overflow-y-auto p-4 space-y-5">
 
       {isLoading ? (
         <div className="text-sm text-muted-foreground">Analyzing query...</div>
@@ -126,6 +142,7 @@ export function InsightsSidebar({ query, className }: InsightsSidebarProps) {
           </div>
         </>
       ) : null}
+      </div>
     </div>
   );
 }

@@ -11,21 +11,54 @@ export async function extractFileContent(fileId: string): Promise<FileContent | 
   try {
     const file = await prisma.file.findUnique({
       where: { id: fileId },
+      select: {
+        id: true,
+        originalName: true,
+        mimeType: true,
+        storageType: true,
+        data: true,
+      },
     });
 
     if (!file) {
       return null;
     }
 
-    let fileBuffer: Buffer;
-    if (file.storageType === "mongodb" && file.data) {
-      fileBuffer = Buffer.from(file.data, "base64");
-    } else {
+    if (file.storageType !== "mongodb") {
       return {
         filename: file.originalName,
         mimeType: file.mimeType,
         content: "",
         error: "File storage type not supported for extraction",
+      };
+    }
+
+    if (!file.data || file.data.length === 0) {
+      return {
+        filename: file.originalName,
+        mimeType: file.mimeType,
+        content: "",
+        error: "File data is missing or empty",
+      };
+    }
+
+    let fileBuffer: Buffer;
+    try {
+      fileBuffer = Buffer.from(file.data, "base64");
+      if (fileBuffer.length === 0) {
+        return {
+          filename: file.originalName,
+          mimeType: file.mimeType,
+          content: "",
+          error: "Decoded file buffer is empty",
+        };
+      }
+    } catch (bufferError: any) {
+      return {
+        filename: file.originalName,
+        mimeType: file.mimeType,
+        content: "",
+        error: `Failed to decode file data: ${bufferError.message}`,
       };
     }
 
@@ -63,7 +96,6 @@ export async function extractFileContent(fileId: string): Promise<FileContent | 
       };
     }
   } catch (error: any) {
-    console.error("Error extracting file content:", error);
     return {
       filename: "unknown",
       mimeType: "unknown",
@@ -79,16 +111,29 @@ async function extractPDFContent(
   mimeType: string
 ): Promise<FileContent> {
   try {
+    if (!buffer || buffer.length === 0) {
+      return {
+        filename,
+        mimeType,
+        content: "",
+        error: "PDF buffer is empty",
+      };
+    }
+
     let pdfText = "";
+    
     try {
       const dynamicImport = new Function('specifier', 'return import(specifier)');
       const pdfParseModule = await dynamicImport('pdf-parse').catch(() => null);
-      if (pdfParseModule && pdfParseModule.default) {
-        const pdfData = await pdfParseModule.default(buffer);
-        pdfText = pdfData.text;
+      if (pdfParseModule) {
+        const pdfParse = pdfParseModule.default || pdfParseModule;
+        if (pdfParse && typeof pdfParse === 'function') {
+          const pdfData = await pdfParse(buffer);
+          pdfText = pdfData?.text || "";
+        }
       }
-    } catch (importError) {
-      // pdf-parse not available
+    } catch (importError: any) {
+      // pdf-parse not available or failed, continue with fallback
     }
 
     if (pdfText && pdfText.trim().length > 0) {
@@ -99,6 +144,7 @@ async function extractPDFContent(
       };
     }
 
+    // Fallback: try to extract text from PDF structure
     const bufferString = buffer.toString("utf-8", 0, Math.min(buffer.length, 100000));
     const textMatches = bufferString.match(/\(([^)]+)\)/g);
     if (textMatches && textMatches.length > 10) {
@@ -117,11 +163,19 @@ async function extractPDFContent(
       }
     }
 
+    const fileTypeHint = filename.toLowerCase().includes('resume') || filename.toLowerCase().includes('cv') 
+      ? 'resume' 
+      : filename.toLowerCase().includes('application') || filename.toLowerCase().includes('form')
+      ? 'application'
+      : filename.toLowerCase().includes('scheme') || filename.toLowerCase().includes('benefit')
+      ? 'scheme document'
+      : 'document';
+
     return {
       filename,
       mimeType,
-      content: `[PDF Document: ${filename}]\n\nThe PDF file has been received. However, automatic text extraction from this PDF is limited. If you have questions about the document, please:\n1. Copy and paste the relevant text from the PDF\n2. Or describe what you need help with regarding this document\n\nI can help you understand, analyze, or answer questions about the content once you provide the text.`,
-      error: "PDF text extraction is limited. Please provide the text content or describe what you need help with.",
+      content: `[PDF: ${filename}]\n\nI've received your ${fileTypeHint}, but I couldn't fully extract the text content. This often happens with scanned PDFs or complex formatting.`,
+      error: "PDF text extraction incomplete",
     };
   } catch (error: any) {
     return {
@@ -158,15 +212,19 @@ export function formatFileContentsForPrompt(
       prompt += `\n--- File ${index + 1}: ${file.filename} (${file.mimeType}) ---\n`;
       
       if (file.error && (!file.content || file.content.trim().length === 0)) {
-        prompt += `[Note: ${file.error}]\n`;
-        prompt += `The user has attached this file but automatic extraction is limited. Please acknowledge the file and ask the user to provide the text content or describe what they need help with regarding this file.\n`;
+        prompt += file.content || `[File: ${file.filename} - Content extraction was not successful]\n`;
+        prompt += `\nThe file was received but text extraction had limitations. `;
+        if (file.filename.toLowerCase().includes('resume') || file.filename.toLowerCase().includes('cv')) {
+          prompt += `This appears to be a resume. `;
+        }
+        prompt += `Please respond naturally and helpfully based on what the user is asking. If they need analysis or feedback, ask them to share the relevant text or describe what they need help with.\n`;
       } else if (file.content && file.content.trim().length > 0) {
         prompt += file.content;
         if (file.error) {
           prompt += `\n[Note: ${file.error}]\n`;
         }
       } else {
-        prompt += `[File received but content could not be extracted]\n`;
+        prompt += `[File: ${file.filename} - Content could not be extracted]\n`;
       }
       prompt += "\n";
     });
