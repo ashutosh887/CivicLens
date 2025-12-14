@@ -32,15 +32,17 @@ export function useSendMessage({
     const trimmedMessage = message.trim();
     if ((!trimmedMessage && (!fileIds || fileIds.length === 0)) || isLoading) return null;
 
-    const userMessage: Message = {
+    // Create temp message for optimistic UI update
+    const tempUserMessage: Message = {
       id: `temp-${Date.now()}`,
       role: "user",
       content: trimmedMessage,
       createdAt: new Date(),
     };
 
+    // Add temp message to UI immediately for better UX
     if (onStreamChunk) {
-      onStreamChunk(`__USER_MESSAGE_UPDATE__${JSON.stringify(userMessage)}`, "");
+      onStreamChunk(`__USER_MESSAGE_UPDATE__${JSON.stringify(tempUserMessage)}`, "");
     }
 
     setMessage("");
@@ -97,7 +99,7 @@ export function useSendMessage({
                 setTimeout(() => {
                   inputRef.current?.focus();
                 }, 50);
-                return { success: true, userMessage: savedUserMessage || userMessage };
+                return { success: true, userMessage: savedUserMessage || tempUserMessage };
               }
 
               try {
@@ -146,7 +148,7 @@ export function useSendMessage({
         setTimeout(() => {
           inputRef.current?.focus();
         }, 50);
-        return { success: true, userMessage, assistantMessage: data.assistantMessage };
+        return { success: true, userMessage: data.userMessage, assistantMessage: data.assistantMessage };
       }
     } catch (error) {
       const errorMessage = "Sorry, I encountered an error. Please try again.";
@@ -155,7 +157,7 @@ export function useSendMessage({
       setTimeout(() => {
         inputRef.current?.focus();
       }, 50);
-      return { success: false, error: errorMessage, userMessage };
+      return { success: false, error: errorMessage, userMessage: tempUserMessage };
     }
   }, [message, isLoading, chatId, onSuccess, onError, onStreamChunk, stream, fileIds]);
 

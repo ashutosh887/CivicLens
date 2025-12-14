@@ -50,9 +50,14 @@ export function ChatView({ chatId, initialMessages = [], chatTitle, initialQuery
       setStreamingMessageId(null);
       setAttachedFiles([]);
       setMessages((prev) => {
-        const filtered = prev.filter((m) => m.id !== streamingMessageId && m.id !== assistantMessage.id);
-        const withoutTemp = filtered.filter((m) => !m.id.startsWith("temp-"));
-        return [...withoutTemp, assistantMessage];
+        // Remove temp messages, streaming message, and any duplicate assistant message
+        const filtered = prev.filter((m) => {
+          if (m.id.startsWith("temp-")) return false;
+          if (m.id === streamingMessageId) return false;
+          if (m.id === assistantMessage.id) return false;
+          return true;
+        });
+        return [...filtered, assistantMessage];
       });
       insightsManuallyClosed.current = false;
       autoScrollEnabled.current = true;
@@ -69,6 +74,11 @@ export function ChatView({ chatId, initialMessages = [], chatTitle, initialQuery
             const isTempMessage = userMessageData.id && userMessageData.id.startsWith("temp-");
             
             if (isTempMessage) {
+              // Check if we already have this temp message (avoid duplicates)
+              const existingTempIndex = prev.findIndex(m => m.id === userMessageData.id);
+              if (existingTempIndex >= 0) {
+                return prev; // Already exists, don't add again
+              }
               return [...prev, {
                 id: userMessageData.id,
                 role: userMessageData.role,
@@ -77,7 +87,19 @@ export function ChatView({ chatId, initialMessages = [], chatTitle, initialQuery
                 attachments: userMessageData.attachments || (attachedFiles.length > 0 ? attachedFiles : undefined),
               }];
             } else {
-              const filtered = prev.filter((m) => !m.id.startsWith("temp-"));
+              // Real message from server - replace all temp user messages with this real one
+              const filtered = prev.filter((m) => {
+                // Remove all temp messages
+                if (m.id.startsWith("temp-")) return false;
+                // Also remove if it's a user message with the same ID (shouldn't happen, but safety check)
+                if (m.id === userMessageData.id) return false;
+                return true;
+              });
+              // Check if we already have this real message (avoid duplicates)
+              const existingMessageIndex = filtered.findIndex(m => m.id === userMessageData.id);
+              if (existingMessageIndex >= 0) {
+                return filtered; // Already exists, don't add again
+              }
               const newMessage = {
                 id: userMessageData.id,
                 role: userMessageData.role,
@@ -180,15 +202,6 @@ export function ChatView({ chatId, initialMessages = [], chatTitle, initialQuery
     const trimmedMessage = message.trim();
     if ((!trimmedMessage && attachedFiles.length === 0) || isLoading) return;
     
-    const userMessage: Message = {
-      id: `temp-${Date.now()}`,
-      role: "user",
-      content: trimmedMessage || (attachedFiles.length > 0 ? `[Attached ${attachedFiles.length} file(s)]` : ""),
-      createdAt: new Date(),
-      attachments: attachedFiles.length > 0 ? [...attachedFiles] : undefined,
-    };
-    
-    setMessages((prev) => [...prev, userMessage]);
     setMessage("");
     autoScrollEnabled.current = true;
     setTimeout(() => scrollToBottom(), 100);
