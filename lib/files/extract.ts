@@ -134,7 +134,8 @@ async function extractPDFContent(
           pdfText = pdfData?.text || "";
         }
       }
-    } catch (importError: any) {
+    } catch {
+      // Silently fall through to fallback extraction methods
     }
 
     if (pdfText && pdfText.trim().length > 0) {
